@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="review">
+
+	<!-- 날짜 제한 없이 모든 리뷰 조회 -->
+	<select id="getAllReviews" parameterType="int" resultType="ReviewAnalysisVo">
+	    SELECT
+	        r.review_id AS reviewId,
+	        r.product_id AS productId,
+	        r.review_user_id AS reviewUserId,
+	        r.review_order_id AS reviewOrderId,
+	        r.review_rating AS reviewRating,
+	        r.review_content AS reviewContent,
+	        r.review_image_url AS reviewImageUrl,
+	        r.review_created_at AS reviewCreatedAt
+	    FROM Review r
+	    JOIN Product p ON r.product_id = p.product_id
+	    WHERE r.product_id = #{productId}
+	    ORDER BY r.review_created_at DESC
+	</select>
+	
+	<!-- 날짜 제한 리뷰 조회 -->
+	<select id="getAllReviewsLimit" parameterType="int" resultType="ReviewAnalysisVo">
+		SELECT
+			r.review_id AS reviewId,
+            r.product_id AS productId,
+			r.review_user_id AS reviewUserId,
+			r.review_order_id AS reviewOrderId,
+			r.review_rating AS reviewRating,
+			r.review_content AS reviewContent,
+			r.review_image_url AS reviewImageUrl,
+			r.review_created_at AS reviewCreatedAt
+		FROM Review r
+        JOIN Product p ON r.product_id = p.product_id
+        WHERE r.product_id = #{productId}
+        AND r.review_created_at >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+	</select>
+	
+	<!-- 모든 리뷰 데이터 조회 -->
+	<select id="getAllReviewsCount" parameterType="int" resultType="int">
+		SELECT COUNT(*) 
+	    FROM Review 
+	    WHERE product_id = #{productId}
+	</select>
+
+</mapper>

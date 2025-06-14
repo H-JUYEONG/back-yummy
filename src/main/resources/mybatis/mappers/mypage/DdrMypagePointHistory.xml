@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="DdrMypagePointHistory">
+
+	<!-- 포인트 조회 쿼리 -->
+	<select id="getTotalPointByMemberId" parameterType="long" resultType="int">
+		SELECT member_points as totalPoint
+		FROM Member
+		WHERE member_id = #{memberId}
+	</select>
+
+	<select id="checkDuplicatePointHistoryByOrderId" parameterType="long" resultType="int">
+		SELECT COUNT(*)
+		FROM PointHistory
+		WHERE related_order_id = #{orderId};
+	</select>
+
+	<insert id="insertPointHistoryForOrder" parameterType="map">
+		INSERT INTO PointHistory (member_id, type, reason, point_amount, related_design_id,
+		related_order_id, created_at)
+		SELECT
+		cd.member_id,
+		'적립',
+		CONCAT('도안 사용: ', cd.title),
+		1000,
+		cd.cake_design_id,
+		o.order_id,
+		NOW()
+		FROM `Order` o
+		JOIN Product p ON
+		o.product_id = p.product_id
+		JOIN CakeDesign cd ON p.cake_design_id = cd.cake_design_id
+		WHERE
+		o.order_id = #{orderId}
+		AND o.member_id != cd.member_id -- 주문자와 도안
+		작성자가 다른 경우
+		AND NOT EXISTS (
+		SELECT 1
+		FROM PointHistory ph
+		WHERE ph.related_order_id = o.order_id
+		);
+	</insert>
+
+	<update id="updateMemberPointsForOrder" parameterType="map">
+		UPDATE Member
+		SET member_points = member_points + 1000
+		WHERE member_id IN (
+		SELECT cd.member_id
+		FROM
+		`Order` o
+		JOIN Product p ON o.product_id = p.product_id
+		JOIN CakeDesign cd ON p.cake_design_id = cd.cake_design_id
+		WHERE
+		o.order_id = #{orderId}
+		AND o.member_id !=
+		cd.member_id
+		);
+	</update>
+
+	<insert id="insertPointHistory" parameterType="map">
+		INSERT INTO PointHistory (
+		member_id,
+		type,
+		reason,
+		point_amount,
+		related_design_id, -- 이 필드를 추가
+		created_at
+		)
+		VALUES (
+		#{memberId}, -- 회원 ID
+		'적립', -- 포인트 유형
+		#{reason}, -- 적립 사유
+		#{points}, -- 포인트 양
+		#{cakeDesignId}, -- 관련 도안 ID
+		NOW() -- 생성 시간
+		)
+	</insert>
+
+
+	<update id="updateMemberPoints" parameterType="map">
+		UPDATE Member
+		SET member_points = member_points + #{points}
+		WHERE member_id = #{memberId}
+	</update>
+
+
+	<select id="getPointHistoryByMemberId" parameterType="int" resultType="map">
+		SELECT
+		DATE_FORMAT(ph.created_at, '%Y-%m-%d') AS date,
+		ph.reason,
+		cd.cake_design_title AS designTitle,
+		ph.point_amount AS pointAmount
+		FROM PointHistory ph
+		LEFT JOIN CakeDesign cd ON
+		ph.related_design_id = cd.cake_design_id
+		WHERE ph.member_id = #{memberId}
+		ORDER BY ph.created_at DESC
+	</select>
+
+</mapper>

@@ -1,0 +1,679 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="userCakeDesign">
+
+	<!-- 도안 정보 등록 -->
+	<insert id="insertUserCakeDesign" parameterType="VendorCakeDesignVo" useGeneratedKeys="true" keyProperty="cakeDesignId">
+		INSERT INTO CakeDesign
+		(member_id, cake_design_title, cake_design_description, cake_design_preferred_age, cake_design_recommended_event,
+		cake_design_preferred_shape, cake_design_category, cake_design_visibility)
+		VALUES (#{memberId}, #{cakeDesignTitle}, #{cakeDesignDescription}, #{cakeDesignPreferredAge},
+		#{cakeDesignRecommendedEvent}, #{cakeDesignPreferredShape}, #{cakeDesignCategory}, 1)
+	</insert>
+
+	<!-- 도안 이미지 등록 -->
+	<insert id="insertUserCakeDesignImg" parameterType="VendorCakeDesignVo">
+		INSERT INTO CakeDesignImage (cake_design_id, cake_design_image_url)
+		VALUES (#{cakeDesignId}, #{cakeDesignImageUrl})
+	</insert>
+	
+	<!-- 해시태그 이름으로 찾기 -->
+	<select id="findHashtagByName" parameterType="String" resultType="Integer">
+		SELECT cake_design_hashtag_id AS cakeDesignHashtagId
+		FROM CakeDesignHashtag
+		WHERE cake_design_hashtag_name = #{tagName}
+	</select>
+	
+	<!-- 해시태그 추가 -->
+	<insert id="insertHashtag" parameterType="VendorCakeDesignVo" useGeneratedKeys="true" keyProperty="cakeDesignHashtagId">
+	    INSERT INTO CakeDesignHashtag (cake_design_hashtag_name)
+	    VALUES (#{cakeDesignHashtagName})
+	</insert>
+	
+	<!-- 해시태그 매핑 삭제 - 새로 추가 -->
+	<delete id="deleteHashtagMappings" parameterType="int">
+		DELETE FROM HashtagMapping
+		WHERE cake_design_id = #{cakeDesignId}
+	</delete>
+	
+	
+	<!-- 케이크 디자인과 해시태그 연결 -->
+	<insert id="connectCakeDesignWithHashtag" parameterType="map">
+		INSERT INTO HashtagMapping (cake_design_id, cake_design_hashtag_id)
+		VALUES (#{cakeDesignId}, #{hashtagId})
+	</insert>
+
+	<!-- 게시판 총 데이터 개수 가져오기 -->
+	<select id="selectUserCakeDesignBoardCount" parameterType="map" resultType="int">
+		SELECT
+		COUNT(*)
+		FROM
+		CakeDesign c
+		WHERE
+		c.cake_design_visibility = TRUE
+		<if test="searchTerm != null and searchTerm != ''">
+			AND c.cake_design_title LIKE CONCAT('%', #{searchTerm}, '%')
+		</if>
+	</select>
+
+	<!-- 도안 게시판 리스트 최신순 -->
+	<select id="selectUserCakeDesignBoardLatest" parameterType="map" resultType="VendorCakeDesignVo">
+		SELECT
+		    m.type AS memberType,
+		    u.user_nickname AS userNickname,
+		    v.vender_name AS venderName,
+		    c.cake_design_id AS cakeDesignId, -- 도안 ID
+		    c.cake_design_title AS cakeDesignTitle, -- 도안 제목
+		    c.cake_design_description AS cakeDesignDescription, -- 도안 설명
+		    c.cake_design_preferred_age AS cakeDesignPreferredAge, -- 선호 연령
+		    c.cake_design_recommended_event AS cakeDesignRecommendedEvent, -- 추천 이벤트
+		    c.cake_design_preferred_shape AS cakeDesignPreferredShape, -- 선호 케이크 형태
+		    c.cake_design_view_count AS cakeDesignViewCount, -- 조회수
+		    (
+		        SELECT
+		            i.cake_design_image_url
+		        FROM
+		            CakeDesignImage i
+		        WHERE
+		            i.cake_design_id = c.cake_design_id
+		        ORDER BY
+		            i.cake_design_image_id ASC
+		        LIMIT 1
+		    ) AS cakeDesignImageUrl, -- 첫번째 이미지 URL
+		    IFNULL(w.wishlistCount, 0) AS cakeDesignWishlistCount -- 찜
+		FROM
+		    CakeDesign c
+		LEFT JOIN (
+		    SELECT
+		        w.cake_design_id,
+		        COUNT(w.cake_design_wishlist_id) AS wishlistCount
+		    FROM
+		        CakeDesignWishlist w
+		    GROUP BY
+		        w.cake_design_id
+		) w ON c.cake_design_id = w.cake_design_id -- 찜 데이터 조인
+		LEFT JOIN Member m ON c.member_id = m.member_id
+		LEFT JOIN User u ON c.member_id = u.member_id 
+		LEFT JOIN Vender v ON c.member_id = v.member_id
+		WHERE
+		    c.cake_design_visibility = TRUE -- 공개 여부가 TRUE인 데이터만 조회
+		<if test="searchTerm != null and searchTerm != ''">
+			AND c.cake_design_title LIKE CONCAT('%', #{searchTerm}, '%')
+		</if>
+		ORDER BY
+		    c.cake_design_created_at DESC
+		LIMIT #{size} OFFSET #{offset}
+	</select>
+
+	<!-- 도안 게시판 리스트 조회수순 -->
+	<select id="selectUserCakeDesignBoardViews" parameterType="map" resultType="VendorCakeDesignVo">
+		SELECT
+		    m.type, -- 회원 타입 (Member 테이블)
+			u.user_nickname AS userNickname,
+			v.vender_name AS venderName,
+		    c.cake_design_id AS cakeDesignId, -- 도안 ID
+		    c.cake_design_title AS cakeDesignTitle, -- 도안 제목
+		    c.cake_design_description AS cakeDesignDescription, -- 도안 설명
+		    c.cake_design_preferred_age AS cakeDesignPreferredAge, -- 선호 연령
+		    c.cake_design_recommended_event AS cakeDesignRecommendedEvent, -- 추천 이벤트
+		    c.cake_design_preferred_shape AS cakeDesignPreferredShape, -- 선호 케이크 형태
+		    c.cake_design_view_count AS cakeDesignViewCount, -- 조회수
+		    (
+		        SELECT
+		            i.cake_design_image_url
+		        FROM
+		            CakeDesignImage i
+		        WHERE
+		            i.cake_design_id = c.cake_design_id
+		        ORDER BY
+		            i.cake_design_image_id ASC
+		        LIMIT 1
+		    ) AS cakeDesignImageUrl, -- 첫 번째 이미지 URL
+		    IFNULL(w.wishlistCount, 0) AS cakeDesignWishlistCount -- 찜 수
+		FROM
+		    CakeDesign c
+		LEFT JOIN (
+		    SELECT
+		        w.cake_design_id,
+		        COUNT(w.cake_design_wishlist_id) AS wishlistCount
+		    FROM
+		        CakeDesignWishlist w
+		    GROUP BY
+		        w.cake_design_id
+		) w ON c.cake_design_id = w.cake_design_id -- 찜 데이터 조인
+		LEFT JOIN Member m ON c.member_id = m.member_id
+		LEFT JOIN User u ON c.member_id = u.member_id
+		LEFT JOIN Vender v ON c.member_id = v.member_id
+		WHERE
+		    c.cake_design_visibility = TRUE -- 공개 여부가 TRUE인 데이터만 조회
+		    <if test="searchTerm != null and searchTerm != ''">
+		        AND c.cake_design_title LIKE CONCAT('%', #{searchTerm}, '%')
+		    </if>
+		ORDER BY
+		    c.cake_design_view_count DESC, c.cake_design_created_at DESC
+		LIMIT
+		    #{size} OFFSET #{offset}
+	</select>
+
+	<!-- 도안 게시판 리스트 찜순 -->
+	<select id="selectUserCakeDesignBoardLikes" parameterType="map" resultType="VendorCakeDesignVo">
+		SELECT
+		    m.type AS memberType, -- 회원 타입 (Member 테이블)
+		    u.user_nickname AS userNickname,
+			v.vender_name AS venderName,
+		    c.cake_design_id AS cakeDesignId, -- 도안 ID
+		    c.cake_design_title AS cakeDesignTitle, -- 도안 제목
+		    c.cake_design_description AS cakeDesignDescription, -- 도안 설명
+		    c.cake_design_preferred_age AS cakeDesignPreferredAge, -- 선호 연령
+		    c.cake_design_recommended_event AS cakeDesignRecommendedEvent, -- 추천 이벤트
+		    c.cake_design_preferred_shape AS cakeDesignPreferredShape, -- 선호 케이크 형태
+		    c.cake_design_view_count AS cakeDesignViewCount, -- 조회수
+		    (
+		        SELECT
+		            i.cake_design_image_url
+		        FROM
+		            CakeDesignImage i
+		        WHERE
+		            i.cake_design_id = c.cake_design_id
+		        ORDER BY
+		            i.cake_design_image_id ASC
+		        LIMIT 1
+		    ) AS cakeDesignImageUrl, -- 첫 번째 이미지 URL
+		    IFNULL(w.wishlistCount, 0) AS cakeDesignWishlistCount -- 찜 수
+		FROM
+		    CakeDesign c
+		LEFT JOIN (
+		    SELECT
+		        w.cake_design_id,
+		        COUNT(w.cake_design_wishlist_id) AS wishlistCount
+		    FROM
+		        CakeDesignWishlist w
+		    GROUP BY
+		        w.cake_design_id
+		) w ON c.cake_design_id = w.cake_design_id -- 찜 데이터 조인
+		LEFT JOIN Member m ON c.member_id = m.member_id 
+		LEFT JOIN User u ON c.member_id = u.member_id 
+		LEFT JOIN Vender v ON c.member_id = v.member_id
+		WHERE
+		    c.cake_design_visibility = TRUE -- 공개 여부가 TRUE인 데이터만 조회
+		    <if test="searchTerm != null and searchTerm != ''">
+		        AND c.cake_design_title LIKE CONCAT('%', #{searchTerm}, '%')
+		    </if>
+		ORDER BY
+		    wishlistCount DESC, 
+		    c.cake_design_created_at DESC -- 찜 개수 기준 내림차순 정렬
+		LIMIT
+		    #{size} OFFSET #{offset}
+	</select>
+
+	<!-- ALL 갯수 -->
+	<select id="selectUserCakeDesignTotalCount" resultType="int">
+		SELECT
+		COUNT(*)
+		FROM
+		CakeDesign c
+		WHERE
+		c.cake_design_visibility = TRUE
+	</select>
+
+	<!-- 도안 상세정보 및 이미지 데이터 함께 조회 -->
+	<select id="getCakeDesignDetailWithImages" parameterType="int" resultType="VendorCakeDesignVo">
+		SELECT
+		    m.member_id AS memberId, -- 회원 고유 ID
+		    m.type, -- 업체, 유저, 어드민
+		    v.vender_name AS venderName,
+		    u.user_nickname AS userNickname, -- 작성자 닉네임
+		    c.cake_design_id AS cakeDesignId, -- 도안 ID
+		    c.cake_design_title AS cakeDesignTitle, -- 도안 제목
+		    c.cake_design_description AS cakeDesignDescription, -- 도안 설명
+		    c.cake_design_preferred_age AS cakeDesignPreferredAge, -- 선호 연령
+		    c.cake_design_recommended_event AS cakeDesignRecommendedEvent, -- 추천 이벤트
+		    c.cake_design_preferred_shape AS cakeDesignPreferredShape, -- 선호 케이크 형태
+		    c.cake_design_category AS cakeDesignCategory, -- 카테고리
+		    c.cake_design_view_count AS cakeDesignViewCount, -- 조회수
+		    c.cake_design_created_at AS cakeDesignCreatedAt, -- 등록일
+		    i.cake_design_image_url AS cakeDesignImageUrl, -- 이미지 URL
+		    COUNT(w.cake_design_wishlist_id) AS cakeDesignWishlistCount, -- 찜 수
+		    GROUP_CONCAT(h.cake_design_hashtag_name) AS cakeDesignHashtagName -- 해시태그들을 쉼표로 구분하여 가져오기
+		FROM
+		    CakeDesign c
+		LEFT JOIN
+		    Member m ON c.member_id = m.member_id -- Member 테이블 조인
+		LEFT JOIN
+		    User u ON c.member_id = u.member_id -- User 테이블 조인
+		LEFT JOIN
+		    CakeDesignImage i ON c.cake_design_id = i.cake_design_id -- 도안 이미지 조인
+		LEFT JOIN
+		    CakeDesignWishlist w ON c.cake_design_id = w.cake_design_id -- 찜 데이터 조인
+		LEFT JOIN
+		    Vender v ON c.member_id = v.member_id
+		LEFT JOIN
+		    HashtagMapping mapping ON c.cake_design_id = mapping.cake_design_id -- 해시태그 매핑 조인
+		LEFT JOIN
+		    CakeDesignHashtag h ON mapping.cake_design_hashtag_id = h.cake_design_hashtag_id -- 해시태그 조인
+		WHERE
+		    c.cake_design_id = #{cakeDesign_Id} -- 특정 도안 ID 조건
+		GROUP BY
+		    c.cake_design_id,
+		    m.type,
+		    c.cake_design_title,
+		    c.cake_design_description,
+		    c.cake_design_preferred_age,
+		    c.cake_design_recommended_event,
+		    c.cake_design_preferred_shape,
+		    c.cake_design_category,
+		    c.cake_design_view_count,
+		    c.cake_design_created_at,
+		    i.cake_design_image_id,
+		    i.cake_design_image_url,
+		    u.user_nickname,
+		    v.vender_name
+		ORDER BY i.cake_design_image_id
+	</select>
+
+	<!-- 조회수 증가 -->
+	<update id="updateHit" parameterType="int">
+		<![CDATA[
+		 	update CakeDesign
+		 	set cake_design_view_count = cake_design_view_count + 1
+		 	where cake_design_id = #{cakeDesignId}
+	]]>
+	</update>
+
+	<!-- 도안 사용 후기 -->
+	<select id="selectUserCakeDesignReviews" parameterType="int" resultType="CakeDesignReviewVo">
+		SELECT
+			r.review_id AS reviewId,
+			p.product_id AS productId,
+			v.vender_id AS venderId,
+			p.cake_design_id AS
+			cakeDesignId,
+			u.user_nickname AS userNickname,
+			v.vender_name AS venderName,
+			p.product_name AS productName,
+			r.review_content AS reviewContent,
+			r.review_rating AS
+			reviewRating,
+			r.review_image_url AS reviewImageUrl,
+			DATE_FORMAT(r.review_created_at, '%Y.%m.%d') AS reviewCreatedAt
+		FROM Review r
+			JOIN User u ON r.review_user_id = u.user_id
+		JOIN Product p ON r.product_id = p.product_id
+		JOIN Vender v ON
+			p.vender_id = v.vender_id
+		WHERE p.cake_design_id = #{cakeDesignId}
+	</select>
+
+	<!-- 도안 상세정보(조회수 증가 포함X -> 수정할때 사용하는 정보) -->
+	<select id="getCakeDesignDetailWithImages2" parameterType="int" resultType="VendorCakeDesignVo">
+		SELECT
+		    m.member_id AS memberId, -- 회원 고유 ID
+		    m.type, -- 업체, 유저, 어드민
+		    u.user_nickname AS userNickname, -- 작성자 닉네임
+		    c.cake_design_id AS cakeDesignId, -- 도안 ID
+		    c.cake_design_title AS cakeDesignTitle, -- 도안 제목
+		    c.cake_design_description AS cakeDesignDescription, -- 도안 설명
+		    c.cake_design_preferred_age AS cakeDesignPreferredAge, -- 선호 연령
+		    c.cake_design_recommended_event AS cakeDesignRecommendedEvent, -- 추천 이벤트
+		    c.cake_design_preferred_shape AS cakeDesignPreferredShape, -- 선호 케이크 형태
+		    c.cake_design_category AS cakeDesignCategory, -- 카테고리 추가
+		    c.cake_design_view_count AS cakeDesignViewCount, -- 조회수
+		    c.cake_design_created_at AS cakeDesignCreatedAt, -- 등록일
+		    i.cake_design_image_url AS cakeDesignImageUrl, -- 이미지 URL
+		    COUNT(w.cake_design_wishlist_id) AS cakeDesignWishlistCount, -- 찜 수
+		    GROUP_CONCAT(h.cake_design_hashtag_name) AS cakeDesignHashtagName -- 해시태그 추가
+		FROM
+		    CakeDesign c
+		LEFT JOIN
+		    Member m ON c.member_id = m.member_id -- Member 테이블 조인
+		LEFT JOIN
+		    User u ON c.member_id = u.member_id -- User 테이블 조인
+		LEFT JOIN
+		    CakeDesignImage i ON c.cake_design_id = i.cake_design_id -- 도안 이미지 조인
+		LEFT JOIN
+		    CakeDesignWishlist w ON c.cake_design_id = w.cake_design_id -- 찜 데이터 조인
+		LEFT JOIN
+		    HashtagMapping mapping ON c.cake_design_id = mapping.cake_design_id -- 해시태그 매핑 조인
+		LEFT JOIN
+		    CakeDesignHashtag h ON mapping.cake_design_hashtag_id = h.cake_design_hashtag_id -- 해시태그 조인
+		WHERE
+		    c.cake_design_id = #{cakeDesignId} -- 특정 도안 ID 조건
+		GROUP BY
+		    c.cake_design_id,
+		    m.type,
+		    c.cake_design_title,
+		    c.cake_design_description,
+		    c.cake_design_preferred_age,
+		    c.cake_design_recommended_event,
+		    c.cake_design_preferred_shape,
+		    c.cake_design_category, -- GROUP BY 절에 카테고리 추가
+		    c.cake_design_view_count,
+		    c.cake_design_created_at,
+		    i.cake_design_image_id,
+		    i.cake_design_image_url,
+		    u.user_nickname
+		ORDER BY i.cake_design_image_id
+	</select>
+
+	<!-- 도안 정보 수정 -->
+	<update id="updateCakeDesignInfo2" parameterType="VendorCakeDesignVo">
+		UPDATE CakeDesign
+		SET
+		cake_design_title = #{cakeDesignTitle},
+		cake_design_description = #{cakeDesignDescription},
+		cake_design_preferred_age = #{cakeDesignPreferredAge},
+		cake_design_recommended_event = #{cakeDesignRecommendedEvent},
+		cake_design_preferred_shape = #{cakeDesignPreferredShape},
+		cake_design_category = #{cakeDesignCategory}
+		WHERE
+		cake_design_id = #{cakeDesignId}
+	</update>
+
+	<delete id="deleteCakeDesignImage2">
+		DELETE FROM CakeDesignImage
+		WHERE cake_design_image_url = #{imageUrl}
+	</delete>
+
+	<insert id="insertCakeDesignImage2" parameterType="VendorCakeDesignVo">
+		INSERT INTO CakeDesignImage (cake_design_id, cake_design_image_url)
+		VALUES (#{cakeDesignId},
+		#{cakeDesignImageUrl})
+	</insert>
+
+	<!-- 내가 그린 도안 데이터 총 개수 가져오기 -->
+	<select id="selectTotalCount" parameterType="map" resultType="int">
+		SELECT COUNT(*)
+		FROM CakeDesign c
+		WHERE c.member_id = #{memberId}
+		<if test="keyword != null and keyword != ''">
+			AND c.cake_design_title LIKE CONCAT('%', #{keyword}, '%')
+		</if>
+	</select>
+	
+	<!-- 내가 찜한 도안 데이터 총 개수 가져오기 -->
+	<select id="selectTotalCount2" parameterType="map" resultType="int">
+	    SELECT COUNT(*)
+	    FROM CakeDesignWishlist w
+	    WHERE w.member_id = #{memberId}
+	    <if test="keyword != null and keyword != ''">
+	        AND EXISTS (
+	            SELECT 1 
+	            FROM CakeDesign c 
+	            WHERE c.cake_design_id = w.cake_design_id 
+	            AND c.cake_design_title LIKE CONCAT('%', #{keyword}, '%')
+	        )
+	    </if>
+	</select>
+
+	<!-- 유저 마이페이지 내가 그린 도안 전체 -->
+	<select id="selectUserCakeDesignList" parameterType="map" resultType="VendorCakeDesignVo">
+		SELECT
+		c.cake_design_id AS cakeDesignId,
+		c.member_id AS memberId,
+		c.cake_design_title AS cakeDesignTitle,
+		u.user_nickname AS userNickname,
+		(
+		SELECT
+		i.cake_design_image_url
+		FROM CakeDesignImage i
+		WHERE i.cake_design_id = c.cake_design_id
+		ORDER BY i.cake_design_image_id ASC
+		LIMIT 1
+		) AS cakeDesignImageUrl
+		FROM
+		CakeDesign c
+		JOIN User u ON c.member_id = u.member_id
+		WHERE c.member_id = #{memberId}
+		<if test="keyword != null and keyword != ''">
+			AND c.cake_design_title LIKE CONCAT('%', #{keyword}, '%')
+		</if>
+		ORDER BY c.cake_design_created_at DESC
+		LIMIT #{limit} OFFSET #{offset}
+	</select>
+
+	<!-- 유저 마이페이지 내가 그린 도안 최신순 -->
+	<select id="selectUserCakeDesignListLatest" parameterType="map" resultType="VendorCakeDesignVo">
+		SELECT
+		c.cake_design_id AS cakeDesignId,
+		c.member_id AS memberId,
+		c.cake_design_title AS cakeDesignTitle,
+		u.user_nickname AS userNickname,
+		(SELECT
+		i.cake_design_image_url
+		FROM CakeDesignImage i
+		WHERE i.cake_design_id = c.cake_design_id
+		ORDER BY i.cake_design_image_id ASC
+		LIMIT 1) AS cakeDesignImageUrl
+		FROM
+		CakeDesign c
+		JOIN User u ON c.member_id = u.member_id
+		WHERE c.member_id = #{memberId}
+		<if test="keyword != null and keyword != ''">
+			AND c.cake_design_title LIKE CONCAT('%', #{keyword}, '%')
+		</if>
+		ORDER BY c.cake_design_created_at DESC
+		LIMIT #{limit} OFFSET #{offset}
+	</select>
+
+	<!-- 유저 마이페이지 내가 그린 도안 조회수순 -->
+	<select id="selectUserCakeDesignListViews" parameterType="map" resultType="VendorCakeDesignVo">
+		SELECT
+		c.cake_design_id AS cakeDesignId,
+		c.member_id AS memberId,
+		c.cake_design_title AS cakeDesignTitle,
+		u.user_nickname AS userNickname,
+		(SELECT
+		i.cake_design_image_url
+		FROM CakeDesignImage i
+		WHERE i.cake_design_id = c.cake_design_id
+		ORDER BY i.cake_design_image_id ASC
+		LIMIT 1) AS cakeDesignImageUrl
+		FROM
+		CakeDesign c
+		JOIN User u ON c.member_id = u.member_id
+		WHERE c.member_id = #{memberId}
+		<if test="keyword != null and keyword != ''">
+			AND c.cake_design_title LIKE CONCAT('%', #{keyword}, '%')
+		</if>
+		ORDER BY c.cake_design_view_count DESC, c.cake_design_created_at DESC
+		LIMIT #{limit} OFFSET #{offset}
+	</select>
+
+	<!-- 유저 마이페이지 내가 그린 도안 찜순 -->
+	<select id="selectUserCakeDesignListLikes" parameterType="map" resultType="VendorCakeDesignVo">
+		SELECT
+		c.cake_design_id AS cakeDesignId,
+		c.cake_design_title AS cakeDesignTitle,
+		(SELECT i.cake_design_image_url
+		FROM CakeDesignImage i
+		WHERE i.cake_design_id =
+		c.cake_design_id
+		ORDER BY i.cake_design_image_id ASC
+		LIMIT 1) AS cakeDesignImageUrl,
+		IFNULL(w.wishlistCount, 0) AS cakeDesignWishlistCount,
+		u.user_nickname AS
+		userNickname
+		FROM CakeDesign c
+		LEFT JOIN (
+		SELECT
+		w.cake_design_id,
+		COUNT(w.cake_design_wishlist_id) AS wishlistCount
+		FROM CakeDesignWishlist w
+		GROUP BY
+		w.cake_design_id
+		) w ON c.cake_design_id = w.cake_design_id
+		JOIN User u ON c.member_id = u.member_id
+		WHERE c.member_id = #{memberId}
+		<if test="keyword != null and keyword != ''">
+			AND c.cake_design_title LIKE CONCAT('%', #{keyword}, '%')
+		</if>
+		ORDER BY w.wishlistCount DESC, c.cake_design_created_at DESC
+		LIMIT #{limit} OFFSET #{offset}
+	</select>
+
+	<!-- 유저 마이페이지 찜한 도안 전체 -->
+	<select id="selectUserCakeDesignMyLikes" parameterType="map" resultType="VendorCakeDesignVo">
+		SELECT
+		    c.cake_design_id AS cakeDesignId,
+		    c.member_id AS memberId,
+		    c.cake_design_title AS cakeDesignTitle,
+		    u.user_nickname AS userNickname,
+		    (
+		        SELECT
+		            i.cake_design_image_url
+		        FROM CakeDesignImage i
+		        WHERE i.cake_design_id = c.cake_design_id
+		        ORDER BY i.cake_design_image_id ASC
+		        LIMIT 1
+		    ) AS cakeDesignImageUrl
+		FROM
+		    CakeDesign c
+		    LEFT JOIN Member m ON c.member_id = m.member_id
+		    LEFT JOIN User u ON m.member_id = u.member_id
+		    JOIN CakeDesignWishlist w ON c.cake_design_id = w.cake_design_id
+		WHERE w.member_id = #{memberId}
+		    <if test="keyword != null and keyword != ''">
+				AND c.cake_design_title LIKE CONCAT('%', #{keyword}, '%')
+			</if>
+		ORDER BY c.cake_design_created_at DESC
+		LIMIT #{limit} OFFSET #{offset}
+	</select>
+
+
+	<!-- 유저 마이페이지 찜한 도안 최신순 -->
+	<select id="selectUserCakeDesignMyLikesLatest" parameterType="map" resultType="VendorCakeDesignVo">
+			SELECT
+		    c.cake_design_id AS cakeDesignId,
+		    c.member_id AS memberId,
+		    c.cake_design_title AS cakeDesignTitle,
+		    u.user_nickname AS userNickname,
+		    (
+		        SELECT
+		            i.cake_design_image_url
+		        FROM CakeDesignImage i
+		        WHERE i.cake_design_id = c.cake_design_id
+		        ORDER BY i.cake_design_image_id ASC
+		        LIMIT 1
+		    ) AS cakeDesignImageUrl
+		FROM
+		    CakeDesign c
+		    LEFT JOIN Member m ON c.member_id = m.member_id
+		    LEFT JOIN User u ON m.member_id = u.member_id
+		    JOIN CakeDesignWishlist w ON c.cake_design_id = w.cake_design_id
+		WHERE w.member_id = #{memberId}
+		    <if test="keyword != null and keyword != ''">
+				AND c.cake_design_title LIKE CONCAT('%', #{keyword}, '%')
+			</if>
+		ORDER BY c.cake_design_created_at DESC
+		LIMIT #{limit} OFFSET #{offset}
+	</select>
+
+	<!-- 유저 마이페이지 찜한 도안 조회수순 -->
+	<select id="selectUserCakeDesignMyLikesViews" parameterType="map" resultType="VendorCakeDesignVo">
+		SELECT
+		    c.cake_design_id AS cakeDesignId,
+		    c.member_id AS memberId,
+		    c.cake_design_title AS cakeDesignTitle,
+		    u.user_nickname AS userNickname,
+		    (
+		        SELECT
+		            i.cake_design_image_url
+		        FROM CakeDesignImage i
+		        WHERE i.cake_design_id = c.cake_design_id
+		        ORDER BY i.cake_design_image_id ASC
+		        LIMIT 1
+		    ) AS cakeDesignImageUrl
+		FROM
+		    CakeDesign c
+		    LEFT JOIN Member m ON c.member_id = m.member_id
+		    LEFT JOIN User u ON m.member_id = u.member_id
+		    JOIN CakeDesignWishlist w ON c.cake_design_id = w.cake_design_id
+		WHERE w.member_id = #{memberId}
+		    <if test="keyword != null and keyword != ''">
+				AND c.cake_design_title LIKE CONCAT('%', #{keyword}, '%')
+			</if>
+		ORDER BY c.cake_design_view_count DESC, c.cake_design_created_at DESC
+		LIMIT #{limit} OFFSET #{offset}
+	</select>
+
+	<!-- 유저 마이페이지 찜한 도안 찜순 -->
+	<select id="selectUserCakeDesignMyLikesLikes" parameterType="map" resultType="VendorCakeDesignVo">
+		SELECT
+		    c.cake_design_id AS cakeDesignId,
+		    c.member_id AS memberId,
+		    c.cake_design_title AS cakeDesignTitle,
+		    u.user_nickname AS userNickname,
+		    (
+		        SELECT
+		            i.cake_design_image_url
+		        FROM CakeDesignImage i
+		        WHERE i.cake_design_id = c.cake_design_id
+		        ORDER BY i.cake_design_image_id ASC
+		        LIMIT 1
+		    ) AS cakeDesignImageUrl,
+		    (
+		        SELECT COUNT(*)
+		        FROM CakeDesignWishlist w2
+		        WHERE w2.cake_design_id = c.cake_design_id
+		    ) as likeCount
+		FROM CakeDesign c
+		LEFT JOIN Member m ON c.member_id = m.member_id
+		LEFT JOIN User u ON m.member_id = u.member_id
+		JOIN CakeDesignWishlist w ON c.cake_design_id = w.cake_design_id  -- 케이크 도안과 찜 테이블 연결
+		WHERE w.member_id = #{memberId}
+		<if test="keyword != null and keyword != ''">
+		    AND c.cake_design_title LIKE CONCAT('%', #{keyword}, '%')
+		</if>
+		GROUP BY
+		    c.cake_design_id,
+		    c.member_id,
+		    c.cake_design_title,
+		    u.user_nickname
+		ORDER BY likeCount DESC, c.cake_design_created_at DESC
+		LIMIT #{limit} OFFSET #{offset}
+	</select>
+
+	<!-- 찜 상태 확인 -->
+	<select id="checkFavorite" parameterType="map" resultType="int">
+		SELECT COUNT(*)
+		FROM CakeDesignWishlist
+		WHERE member_id = #{memberId}
+		AND cake_design_id =
+		#{cakeDesignId}
+	</select>
+
+	<!-- 찜 추가 -->
+	<insert id="insertFavorite" parameterType="map">
+		INSERT INTO CakeDesignWishlist (
+		cake_design_id,
+		member_id
+		) VALUES (
+		#{cakeDesignId},
+		#{memberId}
+		)
+	</insert>
+
+	<!-- 찜 삭제 -->
+	<delete id="deleteFavorite" parameterType="map">
+		DELETE FROM CakeDesignWishlist
+		WHERE member_id = #{memberId}
+		AND cake_design_id = #{cakeDesignId}
+	</delete>
+
+	<!-- 도안의 총 찜 개수 조회 -->
+	<select id="getWishlistCount" parameterType="int" resultType="int">
+		SELECT COUNT(*)
+		FROM CakeDesignWishlist
+		WHERE cake_design_id = #{cakeDesignId}
+	</select>
+	
+	<!-- 카테고리 가져오기 -->
+	<select id="getCategory" resultType="HyunOptionValueVO">
+		SELECT DISTINCT option_value_name as optionValueName from OptionValue
+		WHERE option_type_id = 1
+		AND option_value_name in('레터링 케이크', '일반 케이크', '도시락 케이크', '반려동물 케이크');
+	</select>
+
+</mapper>

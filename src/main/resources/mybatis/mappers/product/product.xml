@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="product">
+	<select id="selectproduct" parameterType="int"
+		resultType="DdrProductVo">
+		SELECT
+		p.product_id as productId,
+		p.product_name as
+		productName,
+		p.product_price as productPrice,
+		p.product_image1_url as
+		productImage1Url,
+		p.product_image2_url as productImage2Url,
+		p.product_image3_url as productImage3Url,
+		p.product_image4_url as
+		productImage4Url,
+		p.description as description,
+		p.cake_design_id as
+		cakeDesignId,
+		v.vender_id as venderId,
+		v.vender_address as
+		venderAddress,
+		v.latitude,
+		v.longitude,
+		v.kakao_url as kakaoUrl
+		FROM
+		Product p
+		JOIN Vender v ON p.vender_id = v.vender_id
+		WHERE
+		p.product_id =
+		#{productId}
+	</select>
+
+	<select id="getProductOptions" parameterType="int"
+		resultType="DdrOptionVo">
+		SELECT
+		ov.option_value_id AS optionValueId,
+		ov.option_value_name AS optionValueName,
+		ov.option_value_image_url AS optionValueImageUrl,
+		ot.option_type_name AS optionTypeName
+		FROM
+		ProductOptionTypeMapping potm
+		LEFT JOIN
+		OptionType ot ON potm.option_type_id = ot.option_type_id
+		LEFT JOIN
+		OptionValue ov ON potm.option_value_id = ov.option_value_id
+		WHERE
+		potm.product_id = #{productId}
+		AND ot.option_type_name IN (
+		'product_type',
+		'cake_size',
+		'flavor_sheet',
+		'flavor_cream',
+		'cake_background_color',
+		'cream_position',
+		'cream_color',
+		'decoration_type',
+		'decoration_color',
+		'category'
+		)
+		ORDER BY
+		ot.option_type_id,
+		ov.option_value_name
+
+	</select>
+
+	<select id="getCakeDesignId" parameterType="int"
+		resultType="java.lang.Integer">
+		SELECT COALESCE(cake_design_id, 0)
+		FROM Product
+		WHERE
+		product_id = #{productId}
+	</select>
+
+
+</mapper>

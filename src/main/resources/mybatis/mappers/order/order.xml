@@ -1,0 +1,184 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="order">
+
+	<!-- 주문 삽입 -->
+	<insert id="insertOrder"
+		parameterType="DdrOrderVo" useGeneratedKeys="true"
+		keyProperty="orderId" keyColumn="order_id">
+		INSERT INTO `Order` (
+		product_id,
+		user_id,
+		delivery_method,
+		delivery_address,
+		recipient_name,
+		recipient_phone,
+		desired_delivery_date,
+		desired_delivery_time,
+		desired_pickup_datetime,
+		desired_pickup_time,
+		product_type,
+		cake_size,
+		flavor_sheet,
+		flavor_cream,
+		cake_background_color,
+		cream_position,
+		cream_color,
+		decoration_type,
+		decoration_color,
+		category,
+		total_price,
+		settlement_price, <!-- 추가된 settlement_price 
+			컬럼 -->
+		cake_lettering,
+		plate_lettering,
+		additional_requests,
+		order_status,
+		payment_order_id
+		)
+		VALUES (
+		#{productId},
+		#{userId},
+		#{deliveryMethod},
+		#{deliveryAddress},
+		#{recipientName},
+		#{recipientPhone},
+		<choose>
+			<when test="deliveryMethod == '픽업'">
+				NULL, NULL, #{desiredPickupDatetime},
+				#{desiredPickupTime}
+			</when>
+			<otherwise>
+				#{desiredDeliveryDate}, #{desiredDeliveryTime}, NULL, NULL
+			</otherwise>
+		</choose>
+		,
+		#{productType},
+		#{cakeSize},
+		#{flavorSheet},
+		#{flavorCream},
+		#{cakeBackgroundColor},
+		#{creamPosition},
+		#{creamColor},
+		#{decorationType},
+		#{decorationColor},
+		#{category},
+		#{totalPrice},
+		#{settlementPrice}, <!-- #{settlementPrice} 값 추가 -->
+		#{cakeLettering},
+		#{plateLettering},
+		#{additionalRequests},
+		'PENDING',
+		#{paymentOrderId}
+		)
+	</insert>
+	
+	<update id="updateSettlementPrice">
+		UPDATE `Order`
+		SET settlement_price = #{settlementPrice}
+		WHERE order_id = #{orderId}
+	</update>
+
+	<!-- 주문 상태 업데이트 -->
+	<update id="updateOrderStatus" parameterType="int">
+		UPDATE `Order`
+		SET
+		order_status = '결제 완료'
+		WHERE order_id = #{orderId}
+	</update>
+
+	<!-- 주문 상세 조회 -->
+	<select id="getOrderDetail" parameterType="int"
+		resultType="DdrMypageOrderDetailVo">
+		SELECT
+		o.order_id AS orderId,
+		o.product_id AS productId,
+		o.user_id AS userId,
+		DATE_FORMAT(o.order_date, '%Y-%m-%d') AS
+		orderDate,
+		p.product_name AS productName,
+		p.product_image1_url AS
+		productImage,
+		o.delivery_method AS deliveryMethod,
+		o.delivery_address AS
+		deliveryAddress,
+		o.recipient_name AS recipientName,
+		o.recipient_phone AS
+		recipientPhone,
+		o.desired_pickup_datetime AS
+		desiredPickupDatetime,
+		o.desired_delivery_date AS desiredDeliveryDate,
+		o.desired_delivery_time AS desiredDeliveryTime,
+		o.desired_pickup_time
+		AS
+		desiredPickupTime,
+		o.product_type AS productType,
+		o.cake_size AS
+		cakeSize,
+		o.flavor_sheet AS flavorSheet,
+		o.flavor_cream AS flavorCream,
+		o.cake_background_color AS
+		cakeBackgroundColor,
+		o.cream_position AS
+		creamPosition,
+		o.cream_color AS creamColor,
+		o.decoration_type AS
+		decorationType,
+		o.decoration_color AS decorationColor,
+		o.category AS
+		category,
+		o.total_price AS totalPrice,
+		o.cake_lettering AS
+		cakeLettering,
+		o.plate_lettering AS plateLettering,
+		o.additional_requests AS
+		additionalRequests,
+		o.order_status AS
+		orderStatus,
+		m.phone_number AS senderPhone
+		FROM
+		`Order` o
+		LEFT JOIN
+		Product p ON o.product_id = p.product_id
+		LEFT JOIN Member
+		m ON o.user_id
+		= m.member_id
+		WHERE
+		o.order_id = #{orderId}
+	</select>
+
+	<!-- 주문 상태 변경 -->
+	<update id="updateOrderStatusChange"
+			parameterType="DdrOrderStatusVo">
+		UPDATE `Order`
+		SET order_status = #{status}
+		WHERE order_id = #{orderId}
+	</update>
+
+	<select id="getOrderInfo" parameterType="int" resultType="map">
+		SELECT
+		o.order_id AS orderId,
+		cd.member_id AS designerId, -- 도안을 만든 사람
+		cd.cake_design_id AS cakeDesignId,
+		o.user_id AS buyerId -- 주문을 한 사람
+		FROM `Order` o
+		LEFT JOIN Product p ON o.product_id = p.product_id
+		LEFT
+		JOIN CakeDesign cd ON p.cake_design_id = cd.cake_design_id
+		WHERE
+		o.order_id = #{orderId}
+	</select>
+
+	<update id="updatePaymentOrderId">
+		UPDATE `Order`
+		SET payment_order_id = #{paymentOrderId}
+		WHERE order_id = #{orderId}
+	</update>
+
+	<!-- paymentOrderId로 orderId 조회 -->
+	<select id="findOrderIdByPaymentOrderId" parameterType="String" resultType="int">
+		SELECT order_id FROM `Order` WHERE payment_order_id = #{paymentOrderId}
+	</select>
+
+
+</mapper>

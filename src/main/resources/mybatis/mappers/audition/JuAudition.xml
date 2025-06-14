@@ -1,0 +1,723 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="audition">
+
+	<!-- 오디션 신청글 등록 - 픽업/찜한 도안 -->
+	<insert id="insertAuditionWithDesign" parameterType="JuAuditionApplicationVo">
+		INSERT INTO AuditionApplication (user_id, audition_application_title, audition_application_size,
+		expected_price, delivery_method, recipient_name, recipient_phone, desired_pickup_date, desired_pickup_time, region, cake_lettering, plate_lettering, additional_requests, design_id, image_url, status, created_at)
+		VALUES
+		(#{userId}, #{auditionApplicationTitle}, #{auditionApplicationSize}, #{expectedPrice}, #{deliveryMethod}, #{recipientName}, #{recipientPhone}, #{desiredDate}, #{desiredTime}, #{region}, #{cakeLettering}, #{plateLettering}, 
+		#{additionalRequests}, #{designId}, #{imageUrl}, '진행중', now())
+	</insert>
+
+	<!-- 오디션 신청글 등록 - 픽업/사진첨부 -->
+	<insert id="insertAuditionWithImage" parameterType="JuAuditionApplicationVo">
+		INSERT INTO AuditionApplication (user_id, audition_application_title, audition_application_size,
+		expected_price, delivery_method, recipient_name, recipient_phone, desired_pickup_date, desired_pickup_time, region, cake_lettering, plate_lettering, additional_requests, image_url, status, created_at)
+		VALUES (#{userId},
+		#{auditionApplicationTitle}, #{auditionApplicationSize}, #{expectedPrice}, #{deliveryMethod}, #{recipientName}, #{recipientPhone}, #{desiredDate}, #{desiredTime}, #{region}, #{cakeLettering}, #{plateLettering}, 
+		#{additionalRequests}, #{imageUrl}, '진행중', now())
+	</insert>
+
+	<!-- 오디션 신청글 등록 - 픽업/사진없음 -->
+	<insert id="insertAuditionWithoutImage" parameterType="JuAuditionApplicationVo">
+		INSERT INTO AuditionApplication (user_id, audition_application_title, audition_application_size,
+		expected_price, delivery_method, recipient_name, recipient_phone, desired_pickup_date, desired_pickup_time, region, cake_lettering, plate_lettering, additional_requests, status, created_at)
+		VALUES (#{userId},
+		#{auditionApplicationTitle}, #{auditionApplicationSize}, #{expectedPrice}, #{deliveryMethod}, #{recipientName}, #{recipientPhone}, #{desiredDate}, #{desiredTime}, #{region}, #{cakeLettering}, #{plateLettering}, 
+		#{additionalRequests}, '진행중', now())
+	</insert>
+
+	<!-- 오디션 신청글 등록 - 배송/찜한 도안 -->
+	<insert id="insertAuditionWithDesignDelivery" parameterType="JuAuditionApplicationVo">
+		INSERT INTO AuditionApplication (user_id, audition_application_title,
+		audition_application_size, expected_price, delivery_method, delivery_address, recipient_name, recipient_phone, desired_delivery_date, desired_delivery_time, region, cake_lettering, plate_lettering, 
+		additional_requests, design_id, image_url, status, created_at)
+		VALUES (#{userId}, #{auditionApplicationTitle}, #{auditionApplicationSize}, #{expectedPrice},
+		#{deliveryMethod}, #{deliveryAddress}, #{recipientName}, #{recipientPhone}, #{desiredDate}, #{desiredTime}, #{region}, #{cakeLettering}, #{plateLettering}, #{additionalRequests}, #{designId}, #{imageUrl}, '진행중',
+		now())
+	</insert>
+
+	<!-- 오디션 신청글 등록 - 배송/사진첨부 -->
+	<insert id="insertAuditionWithImageDelivery" parameterType="JuAuditionApplicationVo">
+		INSERT INTO AuditionApplication (user_id, audition_application_title,
+		audition_application_size, expected_price, delivery_method, delivery_address, recipient_name, recipient_phone, desired_delivery_date, desired_delivery_time, region, cake_lettering, plate_lettering, 
+		additional_requests, image_url, status, created_at)
+		VALUES (#{userId}, #{auditionApplicationTitle}, #{auditionApplicationSize}, #{expectedPrice},
+		#{deliveryMethod}, #{deliveryAddress}, #{recipientName}, #{recipientPhone}, #{desiredDate}, #{desiredTime}, #{region}, #{cakeLettering}, #{plateLettering}, #{additionalRequests}, #{imageUrl}, '진행중', now())
+	</insert>
+
+	<!-- 오디션 신청글 등록 - 배송/사진없음 -->
+	<insert id="insertAuditionWithoutImageDelivery" parameterType="JuAuditionApplicationVo">
+		INSERT INTO AuditionApplication (user_id, audition_application_title,
+		audition_application_size, expected_price, delivery_method, delivery_address, recipient_name, recipient_phone, desired_delivery_date, desired_delivery_time, region, cake_lettering, plate_lettering, 
+		additional_requests, status, created_at)
+		VALUES (#{userId}, #{auditionApplicationTitle}, #{auditionApplicationSize}, #{expectedPrice},
+		#{deliveryMethod}, #{deliveryAddress}, #{recipientName}, #{recipientPhone}, #{desiredDate}, #{desiredTime}, #{region}, #{cakeLettering}, #{plateLettering}, #{additionalRequests}, '진행중', now())
+	</insert>
+
+
+	<!-- member_id로 user_id 가져오기 -->
+	<select id="selectUserId" parameterType="int" resultType="JuAuditionApplicationVo">
+		SELECT m.member_id AS memberId,
+		u.user_id AS userId
+		FROM Member m
+		JOIN User u ON m.member_id = u.member_id
+		WHERE u.member_id = #{memberId}
+	</select>
+
+
+	<!-- 찜한 도안 리스트 가져오기 -->
+	<select id="selectUserCakeDesignMyLikes" parameterType="int" resultType="VendorCakeDesignVo">
+			SELECT
+			    c.cake_design_id AS cakeDesignId,
+			    c.member_id AS memberId,
+			    c.cake_design_title AS cakeDesignTitle,
+			    u.user_nickname AS userNickname,
+			    (
+			        SELECT
+			            i.cake_design_image_url
+			        FROM CakeDesignImage i
+			        WHERE i.cake_design_id = c.cake_design_id
+			        ORDER BY i.cake_design_image_id ASC
+			        LIMIT 1
+			    ) AS cakeDesignImageUrl
+			FROM
+			    CakeDesign c
+			JOIN User u ON c.member_id = u.member_id
+			WHERE c.member_id = #{memberId}
+			
+			UNION ALL
+			
+			SELECT
+			    c.cake_design_id AS cakeDesignId,
+			    c.member_id AS memberId,
+			    c.cake_design_title AS cakeDesignTitle,
+			    u.user_nickname AS userNickname,
+			    (
+			        SELECT
+			            i.cake_design_image_url
+			        FROM CakeDesignImage i
+			        WHERE i.cake_design_id = c.cake_design_id
+			        ORDER BY i.cake_design_image_id ASC
+			        LIMIT 1
+			    ) AS cakeDesignImageUrl
+			FROM
+			    CakeDesign c
+			    LEFT JOIN Member m ON c.member_id = m.member_id
+			    LEFT JOIN User u ON m.member_id = u.member_id
+			    JOIN CakeDesignWishlist w ON c.cake_design_id = w.cake_design_id
+			WHERE w.member_id = #{memberId}
+	</select>
+
+	<!-- 게시판 총 데이터 개수 가져오기 -->
+	<select id="selectUserAuditionBoardCount" parameterType="map" resultType="int">
+		SELECT COUNT(*)
+		FROM AuditionApplication
+		<if test="searchTerm != null and searchTerm != ''">
+			WHERE audition_application_title LIKE CONCAT('%', #{searchTerm}, '%')
+		</if>
+	</select>
+
+	<!-- 진행중 총 데이터 개수 가져오기 -->
+	<select id="selectUserAuditionOngoingCount" parameterType="map" resultType="int">
+		SELECT COUNT(*)
+		FROM AuditionApplication
+		WHERE status = '진행중'
+		<if test="searchTerm != null and searchTerm != ''">
+			AND audition_application_title LIKE CONCAT('%', #{searchTerm}, '%')
+		</if>
+	</select>
+
+	<!-- 종료 총 데이터 개수 가져오기 -->
+	<select id="selectUserAuditionEndCount" parameterType="map" resultType="int">
+		SELECT COUNT(*)
+		FROM AuditionApplication
+		WHERE status = '종료'
+		<if test="searchTerm != null and searchTerm != ''">
+			AND audition_application_title LIKE CONCAT('%', #{searchTerm}, '%')
+		</if>
+	</select>
+
+	<!-- 오디션 리스트 가져오기 전체 -->
+	<select id="selectUserCakeAuditionBoardList" parameterType="map" resultType="JuAuditionApplicationVo">
+		SELECT
+		a.audition_application_id AS auditionApplicationId,
+		a.user_id AS userId,
+		u.user_nickname AS userNickname,
+		a.audition_application_title AS auditionApplicationTitle,
+		a.audition_application_size AS auditionApplicationSize,
+		a.expected_price AS expectedPrice,
+		a.delivery_method AS deliveryMethod,
+		a.delivery_address AS deliveryAddress,
+		a.recipient_name AS recipientName,
+		a.recipient_phone AS recipientPhone,
+		CASE
+		WHEN a.delivery_method = '픽업' THEN a.desired_pickup_date
+		WHEN a.delivery_method = '배송' THEN a.desired_delivery_date
+		ELSE NULL
+		END AS desiredDate,
+		CASE
+		WHEN a.delivery_method = '픽업' THEN a.desired_pickup_time
+		WHEN a.delivery_method = '배송' THEN a.desired_delivery_time
+		ELSE NULL
+		END AS desiredTime,
+		a.region AS region,
+		a.additional_requests AS additionalRequests,
+		a.design_id AS designId,
+		a.image_url AS imageUrl,
+		a.status,
+		a.created_at AS createdAt,
+		a.audition_view_count AS auditionViewCount,
+		(
+		SELECT COUNT(v.audition_cart_id)
+		FROM AuditionVendorCart v
+		WHERE v.audition_application_id = a.audition_application_id
+		) AS participationCount
+		FROM
+		AuditionApplication a
+		LEFT JOIN
+		User u ON a.user_id = u.user_id
+		WHERE
+		1 = 1
+		<if test="searchTerm != null and searchTerm != ''">
+			AND a.audition_application_title LIKE CONCAT('%', #{searchTerm}, '%')
+		</if>
+		ORDER BY
+		a.created_at DESC
+		LIMIT #{size} OFFSET #{offset}
+	</select>
+
+
+	<!-- 오디션 리스트 가져오기 진행중 -->
+	<select id="selectUserCakeAuditionOngoing" parameterType="map" resultType="JuAuditionApplicationVo">
+		SELECT
+		a.audition_application_id AS auditionApplicationId,
+		a.user_id AS userId,
+		u.user_nickname AS userNickname,
+		a.audition_application_title AS auditionApplicationTitle,
+		a.audition_application_size AS auditionApplicationSize,
+		a.expected_price AS expectedPrice,
+		a.delivery_method AS deliveryMethod,
+		a.delivery_address AS deliveryAddress,
+		a.recipient_name AS recipientName,
+		a.recipient_phone AS recipientPhone,
+		CASE
+		WHEN a.delivery_method = '픽업' THEN a.desired_pickup_date
+		WHEN a.delivery_method = '배송' THEN a.desired_delivery_date
+		ELSE NULL
+		END AS desiredDate,
+		CASE
+		WHEN a.delivery_method = '픽업' THEN a.desired_pickup_time
+		WHEN a.delivery_method = '배송' THEN a.desired_delivery_time
+		ELSE NULL
+		END AS desiredTime,
+		a.region AS region,
+		a.additional_requests AS additionalRequests,
+		a.design_id AS designId,
+		a.image_url AS imageUrl,
+		a.status,
+		a.created_at AS createdAt,
+		a.audition_view_count AS auditionViewCount,
+		(
+		SELECT COUNT(v.audition_cart_id)
+		FROM AuditionVendorCart v
+		WHERE v.audition_application_id = a.audition_application_id
+		) AS participationCount
+		FROM
+		AuditionApplication a
+		LEFT JOIN
+		User u ON a.user_id = u.user_id
+		WHERE
+		a.status = '진행중'
+		<if test="searchTerm != null and searchTerm != ''">
+			AND a.audition_application_title LIKE CONCAT('%', #{searchTerm}, '%')
+		</if>
+		ORDER BY
+		a.created_at DESC
+		LIMIT #{size} OFFSET #{offset}
+	</select>
+
+
+	<!-- 오디션 종료 -->
+	<select id="selectUserCakeAuditionEnd" parameterType="map" resultType="JuAuditionApplicationVo">
+		SELECT
+		a.audition_application_id AS auditionApplicationId,
+		a.user_id AS userId,
+		u.user_nickname AS userNickname,
+		a.audition_application_title AS auditionApplicationTitle,
+		a.audition_application_size AS auditionApplicationSize,
+		a.expected_price AS expectedPrice,
+		a.delivery_method AS deliveryMethod,
+		a.delivery_address AS deliveryAddress,
+		a.recipient_name AS recipientName,
+		a.recipient_phone AS recipientPhone,
+		CASE
+		WHEN a.delivery_method = '픽업' THEN a.desired_pickup_date
+		WHEN a.delivery_method = '배송' THEN a.desired_delivery_date
+		ELSE NULL
+		END AS desiredDate,
+		CASE
+		WHEN a.delivery_method = '픽업' THEN a.desired_pickup_time
+		WHEN a.delivery_method = '배송' THEN a.desired_delivery_time
+		ELSE NULL
+		END AS desiredTime,
+		a.region AS region,
+		a.additional_requests AS additionalRequests,
+		a.design_id AS designId,
+		a.image_url AS imageUrl,
+		a.status,
+		a.created_at AS createdAt,
+		a.audition_view_count AS auditionViewCount,
+		(
+		SELECT COUNT(v.audition_cart_id)
+		FROM AuditionVendorCart v
+		WHERE v.audition_application_id = a.audition_application_id
+		) AS participationCount
+		FROM
+		AuditionApplication a
+		LEFT JOIN
+		User u ON a.user_id = u.user_id
+		WHERE
+		a.status = '종료'
+		<if test="searchTerm != null and searchTerm != ''">
+			AND a.audition_application_title LIKE CONCAT('%', #{searchTerm}, '%')
+		</if>
+		ORDER BY
+		a.created_at DESC
+		LIMIT #{size} OFFSET #{offset}
+	</select>
+
+	<!-- 오디션 상세정보 -->
+	<select id="selectUserAuditionDetail" parameterType="int" resultType="JuAuditionApplicationVo">
+		SELECT
+			a.audition_application_id AS auditionApplicationId,
+			m.member_id AS memberId,
+			a.user_id AS userId,
+			u.user_nickname AS userNickname,
+			a.audition_application_title AS auditionApplicationTitle,
+			a.audition_application_size AS auditionApplicationSize,
+			a.expected_price AS expectedPrice,
+			a.delivery_method AS deliveryMethod,
+			a.delivery_address AS deliveryAddress,
+			a.recipient_name AS recipientName,
+			a.recipient_phone AS recipientPhone,
+			CASE
+	        WHEN a.delivery_method = '픽업' THEN DATE_FORMAT(a.desired_pickup_date, '%Y-%m-%d')
+	        WHEN a.delivery_method = '배송' THEN DATE_FORMAT(a.desired_delivery_date, '%Y-%m-%d')
+	        ELSE NULL
+		    END AS desiredDate,
+		    CASE
+		        WHEN a.delivery_method = '픽업' THEN DATE_FORMAT(a.desired_pickup_time, '%H:%i')
+		        WHEN a.delivery_method = '배송' THEN DATE_FORMAT(a.desired_delivery_time, '%H:%i')
+		        ELSE NULL
+		    END AS desiredTime,
+			a.region AS region,
+			a.cake_lettering AS cakeLettering, 
+            a.plate_lettering AS plateLettering,
+			a.additional_requests AS additionalRequests,
+			a.design_id AS designId,
+			a.image_url AS imageUrl,
+			a.status,
+			a.created_at AS createdAt,
+			a.audition_view_count AS auditionViewCount,
+			(
+			SELECT COUNT(v.audition_cart_id)
+			FROM AuditionVendorCart v
+			WHERE v.audition_application_id = a.audition_application_id
+			) AS participationCount
+		FROM
+			AuditionApplication a
+		LEFT JOIN
+			User u ON a.user_id = u.user_id
+		LEFT JOIN Member m ON u.member_id = m.member_id
+		WHERE a.audition_application_id = #{auditionApplicationId}
+		ORDER BY a.created_at DESC
+	</select>
+
+	<!-- 조회수 증가 -->
+	<update id="updateAuditionHit" parameterType="int">
+		<![CDATA[
+		 	update AuditionApplication
+		 	set audition_view_count = audition_view_count + 1
+		 	where audition_application_id = #{auditionApplicationId}
+	]]>
+	</update>
+
+	<!-- 참가신청한 업체정보 가져오기 -->
+	<select id="selectUserAuditionVenders" parameterType="int" resultType="JuAuditionVendorCartVo">
+		SELECT	    
+			u.user_id As userId,
+		    a.audition_application_id AS auditionApplicationId, -- 오디션 신청글 ID
+		    avc.audition_cart_id AS auditionCartId,
+		    a.audition_application_title AS auditionApplicationTitle, -- 오디션 제목
+		    v.vender_name AS venderName, -- 업체명
+		    p.product_id AS productId,
+		    p.product_name AS productName, -- 상품명
+		    p.product_image1_url AS productImage1Url, -- 상품 사진 URL (대표 사진)
+		    a.status, -- 오디션 상태
+		    avc.vendor_id AS venderId,
+		    avc.product_id AS productId,
+		    avc.delivery_method AS deliveryMethod,
+		    a.delivery_address AS deliveryAddress,
+		    a.recipient_name AS recipientName,
+		    a.recipient_phone AS recipientPhone,
+		    CASE
+		        WHEN avc.delivery_method = '픽업' THEN desired_pickup_date
+		        WHEN avc.delivery_method = '배송' THEN desired_delivery_date
+		        ELSE NULL
+		    END AS desiredDate,
+		    CASE
+		        WHEN avc.delivery_method = '픽업' THEN desired_pickup_time
+		        WHEN avc.delivery_method = '배송' THEN desired_delivery_time
+		        ELSE NULL
+		    END AS desiredTime,
+		    avc.product_type AS productType,
+		    avc.cake_size AS cakeSize,
+		    avc.flavor_sheet AS flavorSheet,
+		    avc.flavor_cream AS flavorCream,
+		    avc.background_color AS backgroundColor,
+		    avc.cream_position AS creamPosition,
+		    avc.cream_color AS creamColor,
+		    avc.decoration_type AS decorationType,
+		    avc.decoration_color AS decorationColor,
+		    avc.category AS category,
+		    avc.order_amount AS orderAmount,
+		    avc.cake_lettering AS cakeLettering,
+		    avc.plate_lettering AS plateLettering,
+		    avc.proposed_amount AS proposedAmount, -- 제시 금액
+		    avc.additional_requests AS additionalRequests,
+		    avc.shop_requests AS shopRequests,
+		    avc.delivery_date AS deliveryDate,
+		    avc.is_selected AS isSelected,
+		    avc.created_at AS createdAt
+		FROM
+		    AuditionApplication a
+		    JOIN AuditionVendorCart avc ON a.audition_application_id = avc.audition_application_id
+		    JOIN Vender v ON avc.vendor_id = v.vender_id
+		    JOIN Product p ON avc.product_id = p.product_id
+            JOIN User u ON a.user_id = u.user_id
+		WHERE
+		    a.status = '진행중'
+		    AND a.audition_application_id = #{auditionApplicationId}
+		    AND avc.is_selected = 0
+	</select>
+
+	<!-- 오디션 종료 내용 -->
+	<select id="selectUserAuditionVendersEnd" parameterType="int" resultType="JuAuditionVendorCartVo">
+		SELECT
+		a.audition_application_id AS auditionApplicationId, -- 오디션 신청글 ID
+		avc.vendor_id AS venderId,
+		avc.product_id AS productId,
+		a.audition_application_title AS auditionApplicationTitle, -- 오디션 제목
+		v.vender_name AS venderName, -- 업체명
+		p.product_name AS productName, -- 상품명
+		avc.proposed_amount AS proposedAmount, -- 제시 금액
+		p.product_image1_url AS productImage1Url, -- 상품 사진 URL (대표 사진)
+		a.status, -- 오디션 상태
+		avc.is_selected AS isSelected -- 선택 여부
+		FROM
+		AuditionApplication a
+		JOIN AuditionVendorCart avc ON a.audition_application_id = avc.audition_application_id
+		JOIN Vender v ON avc.vendor_id = v.vender_id
+		JOIN
+		Product p ON avc.product_id = p.product_id
+		LEFT JOIN
+		`Order` o ON a.audition_application_id = o.audition_application_id
+		AND p.product_id = o.product_id -- 오디션과 상품번호를 통해 주문 연결
+		WHERE
+		a.status = '종료' -- 오디션 상태가 '종료'
+		AND a.audition_application_id = #{auditionApplicationId} -- 특정 오디션 ID
+		AND avc.is_selected = 1 -- 선택된 업체만
+		ORDER BY avc.audition_cart_id
+	</select>
+
+	<!-- 오디션 리뷰 가져오기 -->
+	<select id="selectUserAuditionVendersReviews" parameterType="int" resultType="JuAuditionVendorCartVo">
+		SELECT
+			a.audition_application_id AS auditionApplicationId, -- 오디션 신청글 ID
+			a.audition_application_title AS auditionApplicationTitle, -- 오디션 제목
+			v.vender_name AS venderName, -- 업체명
+			p.product_name AS productName, -- 상품명
+			avc.proposed_amount AS proposedAmount, -- 제시 금액
+			p.product_image1_url AS productImage1Url, -- 상품 사진 URL (대표 사진)
+			a.status, -- 오디션 상태
+			avc.is_selected AS isSelected, -- 선택 여부
+			r.review_rating AS reviewRating, -- 리뷰 별점
+			r.review_content AS reviewContent, -- 리뷰 내용
+			r.review_created_at AS reviewCreatedAt, -- 리뷰 작성일
+			u.user_nickname AS userNickname -- 리뷰 작성자 닉네임
+		FROM
+			AuditionApplication a
+		JOIN AuditionVendorCart avc ON a.audition_application_id = avc.audition_application_id
+		JOIN Vender v ON avc.vendor_id = v.vender_id
+		JOIN
+			Product p ON avc.product_id = p.product_id
+		JOIN
+			`Order` o ON p.product_id = o.product_id -- 오디션과 상품번호를 통해 주문 연결
+		JOIN
+			Review r ON r.review_order_id = o.order_id
+		AND r.product_id = p.product_id -- 리뷰와 상품번호를 통해 연결
+		JOIN
+			User u ON r.review_user_id = u.user_id
+		WHERE
+			a.status = '종료' -- 오디션 상태가 '종료'
+		AND a.audition_application_id = #{auditionApplicationId} -- 특정 오디션 ID
+		AND avc.is_selected = 1 -- 선택된 업체만
+		ORDER BY avc.audition_cart_id ASC, r.review_created_at DESC
+	</select>
+
+	<!-- 오디션 신청 -->
+	<update id="updateUserAuditionSelect" parameterType="map">
+		<![CDATA[
+		 	UPDATE AuditionVendorCart
+			SET is_selected = 1
+			WHERE audition_application_id = #{auditionApplicationId}
+			AND audition_cart_id = #{auditionCartId}
+		]]>
+	</update>
+
+	<!-- 게시글 상태 변경 -->
+	<update id="updateUserAuditionChange" parameterType="int">
+		<![CDATA[
+		 	UPDATE AuditionApplication
+		 	SET status = '종료'
+		 	WHERE audition_application_id = #{auditionApplicationId}
+		]]>
+	</update>
+	
+	<!-- Order 주문 완료(픽업) -->
+	<insert id="insertOrderPickup" parameterType="JuAuditionVendorCartVo">
+		INSERT INTO `Order` ( product_id, user_id, audition_application_id, delivery_method, recipient_name, recipient_phone, desired_pickup_datetime, desired_pickup_time, product_type, 
+		cake_size, flavor_sheet, flavor_cream, cake_background_color, cream_position, cream_color, decoration_type, decoration_color, category, total_price, 
+		cake_lettering, plate_lettering, additional_requests, order_status, created_at,order_date)
+		VALUES
+		(#{productId}, #{userId}, #{auditionApplicationId}, #{deliveryMethod}, #{recipientName}, #{recipientPhone}, #{desiredDate}, #{desiredTime}, #{productType}, #{cakeSize}, 
+		#{flavorSheet}, #{flavorCream}, #{backgroundColor}, #{creamPosition}, #{creamColor}, #{decorationType}, #{decorationColor}, #{category}, 
+		#{orderAmount}, #{cakeLettering}, #{plateLettering}, #{additionalRequests}, '결제 완료', now(), now())
+	</insert>
+	
+	<!-- Order 주문 완료(배송) -->
+	<insert id="insertOrderDelivery" parameterType="JuAuditionVendorCartVo">
+		INSERT INTO `Order` ( product_id, user_id, audition_application_id, delivery_method, delivery_address, recipient_name, recipient_phone, desired_delivery_date,
+		desired_delivery_time, product_type, cake_size, flavor_sheet, flavor_cream, cake_background_color, cream_position, cream_color, decoration_type, 
+		decoration_color, category, total_price, cake_lettering, plate_lettering, additional_requests, order_status, created_at,order_date)
+		VALUES
+		(#{productId}, #{userId}, #{auditionApplicationId}, #{deliveryMethod}, #{deliveryAddress},  #{recipientName}, #{recipientPhone}, #{desiredDate}, #{desiredTime}, 
+		#{productType}, #{cakeSize}, #{flavorSheet}, #{flavorCream}, #{backgroundColor}, #{creamPosition}, #{creamColor}, #{decorationType}, #{decorationColor}, 
+		#{category}, #{orderAmount}, #{cakeLettering}, #{plateLettering}, #{additionalRequests}, '결제 완료', now(), now())
+	</insert>
+	
+	<!-- 오디션 신청글 내용 가져오기(수정폼) -->
+	<select id="selectUserAuditionContent" parameterType="int" resultType="JuAuditionApplicationVo">
+		SELECT  
+				audition_application_id AS auditionApplicationId,
+				user_id AS userId,
+				audition_application_title AS auditionApplicationTitle,
+				audition_application_size AS auditionApplicationSize,
+				expected_price AS expectedPrice,
+				delivery_method AS deliveryMethod,
+				delivery_address AS deliveryAddress,
+				recipient_name AS recipientName,
+				recipient_phone AS recipientPhone,
+				CASE
+					WHEN delivery_method = '픽업' THEN desired_pickup_date
+					WHEN delivery_method = '배송' THEN desired_delivery_date
+					ELSE NULL
+				END AS desiredDate,
+				CASE
+					WHEN delivery_method = '픽업' THEN desired_pickup_time
+					WHEN delivery_method = '배송' THEN desired_delivery_time
+					ELSE NULL
+					END AS desiredTime,
+				region,
+				cake_lettering AS cakeLettering, 
+				plate_lettering AS plateLettering,
+				additional_requests AS additionalRequests,
+				design_id AS designId,
+				image_url AS imageUrl,
+				status,
+				created_at AS createdAt
+		FROM AuditionApplication
+		WHERE audition_application_id = #{auditionApplicationId}
+	</select>
+	
+	<!-- 오디션 신청글 ID 존재 여부 확인 -->
+    <select id="existsById" resultType="int">
+        SELECT COUNT(*)
+        FROM AuditionApplication
+        WHERE audition_application_id = #{auditionApplicationId}
+    </select>
+
+    <!-- 찜한 도안 수정 -->
+	<update id="updateAuditionWithDesign" parameterType="JuAuditionApplicationVo">
+	    UPDATE AuditionApplication
+	    SET audition_application_title = #{auditionApplicationTitle},
+	        audition_application_size = #{auditionApplicationSize},
+	        expected_price = #{expectedPrice},
+	        delivery_method = #{deliveryMethod},
+	        design_id = CASE WHEN #{designId} = 0 THEN NULL ELSE #{designId} END,
+	        image_url = #{imageUrl},
+	        desired_delivery_date = CASE WHEN #{deliveryMethod} = '배송' THEN #{desiredDate} ELSE NULL END,
+	        desired_delivery_time = CASE WHEN #{deliveryMethod} = '배송' THEN #{desiredTime} ELSE NULL END,
+	        desired_pickup_date = CASE WHEN #{deliveryMethod} = '픽업' THEN #{desiredDate} ELSE NULL END,
+	        desired_pickup_time = CASE WHEN #{deliveryMethod} = '픽업' THEN #{desiredTime} ELSE NULL END,
+	        region = #{region},
+	        cake_lettering = #{cakeLettering}, 
+			plate_lettering = #{plateLettering},
+	        delivery_address = CASE WHEN #{deliveryMethod} = '배송' THEN #{deliveryAddress} ELSE NULL END,
+	        recipient_name = #{recipientName},
+	        recipient_phone = #{recipientPhone},
+	        additional_requests = #{additionalRequests}
+	    WHERE audition_application_id = #{auditionApplicationId}
+	</update>
+
+    <!-- 사진 첨부 수정 -->
+	<update id="updateAuditionWithImage" parameterType="JuAuditionApplicationVo">
+	    UPDATE AuditionApplication
+	    SET audition_application_title = #{auditionApplicationTitle},
+	        audition_application_size = #{auditionApplicationSize},
+	        expected_price = #{expectedPrice},
+	        delivery_method = #{deliveryMethod},
+	        design_id = NULL, -- 도안 ID를 초기화
+	        image_url = #{imageUrl},
+	        desired_delivery_date = CASE WHEN #{deliveryMethod} = '배송' THEN #{desiredDate} ELSE NULL END,
+	        desired_delivery_time = CASE WHEN #{deliveryMethod} = '배송' THEN #{desiredTime} ELSE NULL END,
+	        desired_pickup_date = CASE WHEN #{deliveryMethod} = '픽업' THEN #{desiredDate} ELSE NULL END,
+	        desired_pickup_time = CASE WHEN #{deliveryMethod} = '픽업' THEN #{desiredTime} ELSE NULL END,
+	        region = #{region},
+	        cake_lettering = #{cakeLettering}, 
+			plate_lettering = #{plateLettering},
+	        delivery_address = CASE WHEN #{deliveryMethod} = '배송' THEN #{deliveryAddress} ELSE NULL END,
+	        recipient_name = #{recipientName},
+	        recipient_phone = #{recipientPhone},
+	        additional_requests = #{additionalRequests}
+	    WHERE audition_application_id = #{auditionApplicationId}
+	</update>
+
+
+    <!-- 사진 없음 수정 -->
+	<update id="updateAuditionWithoutImage" parameterType="JuAuditionApplicationVo">
+	    UPDATE AuditionApplication
+	    SET audition_application_title = #{auditionApplicationTitle},
+	        audition_application_size = #{auditionApplicationSize},
+	        expected_price = #{expectedPrice},
+	        delivery_method = #{deliveryMethod},
+	        design_id = NULL, -- 도안 ID를 초기화
+	        image_url = NULL, -- 이미지 URL을 초기화
+	        desired_delivery_date = CASE WHEN #{deliveryMethod} = '배송' THEN #{desiredDate} ELSE NULL END,
+	        desired_delivery_time = CASE WHEN #{deliveryMethod} = '배송' THEN #{desiredTime} ELSE NULL END,
+	        desired_pickup_date = CASE WHEN #{deliveryMethod} = '픽업' THEN #{desiredDate} ELSE NULL END,
+	        desired_pickup_time = CASE WHEN #{deliveryMethod} = '픽업' THEN #{desiredTime} ELSE NULL END,
+	        region = #{region},
+	        cake_lettering = #{cakeLettering}, 
+			plate_lettering = #{plateLettering},
+	        delivery_address = CASE WHEN #{deliveryMethod} = '배송' THEN #{deliveryAddress} ELSE NULL END,
+	        recipient_name = #{recipientName},
+	        recipient_phone = #{recipientPhone},
+	        additional_requests = #{additionalRequests}
+	    WHERE audition_application_id = #{auditionApplicationId}
+	</update>
+	
+	<!-- Order 테이블에 참조여부 확인 -->
+	<select id="checkAuditionApplicationId" parameterType="int" resultType="int">
+		SELECT COUNT(*)
+		FROM `Order`
+		WHERE audition_application_id = #{auditionApplicationId}
+	</select>
+	
+	<!-- AuditionVendorCart에서 삭제하기 -->
+	<delete id="deleteAuditionVendorCart" parameterType="int">
+		DELETE FROM AuditionVendorCart
+		WHERE audition_application_id = #{auditionApplicationId}
+	</delete>
+	
+	<!-- 글 삭제 -->
+	<delete id="deleteAudition" parameterType="int">
+		DELETE FROM AuditionApplication
+		WHERE audition_application_id = #{auditionApplicationId}
+	</delete>
+	
+	<!-- 결제 정보 가져오기 -->
+    <select id="selectPaymentCompleted" parameterType="int" resultType="JuOrderVo">
+        SELECT order_id AS orderId,
+			   total_price AS totalPrice,
+		       order_date AS orderDate
+		FROM `Order`
+        WHERE audition_application_id = #{auditionApplicationId}
+    </select>
+    
+    <!-- 마이페이지 오디션 관리 - 진행중 -->
+    <select id="selectUserAuditionOngoing" parameterType="int" resultType="JuAuditionApplicationVo">
+        SELECT audition_application_id AS auditionApplicationId,
+			   user_id AS userId,
+		       audition_application_title AS auditionApplicationTitle,
+		       audition_application_size AS auditionApplicationSize,
+		       expected_price AS expectedPrice,
+		       delivery_method AS deliveryMethod,
+		       delivery_address AS deliveryAddress,
+		       recipient_name AS recipientName,
+		       recipient_phone AS recipientPhone,
+		       CASE
+			       WHEN delivery_method = '픽업' THEN DATE_FORMAT(desired_pickup_date, '%Y-%m-%d')
+			       WHEN delivery_method = '배송' THEN DATE_FORMAT(desired_delivery_date, '%Y-%m-%d')
+			       ELSE NULL
+			       END AS desiredDate,
+		       CASE
+			       WHEN delivery_method = '픽업' THEN DATE_FORMAT(desired_pickup_time, '%H:%i')
+			       WHEN delivery_method = '배송' THEN DATE_FORMAT(desired_delivery_time, '%H:%i')
+			       ELSE NULL
+		       END AS desiredTime,
+		       region,
+		       cake_lettering AS cakeLettering, 
+		       plate_lettering AS plateLettering,
+		       additional_requests AS additionalRequests,
+		       design_id AS designId,
+		       image_url AS imageUrl,
+		       status,
+		       created_at AS createdAt
+		FROM AuditionApplication
+		WHERE user_id = #{userId}
+		AND status = '진행중'
+		ORDER BY created_at DESC
+    </select>
+    
+    <!-- 마이페이지 오디션 관리 - 종료 -->
+    <select id="selectUserAuditionEnd" parameterType="int" resultType="JuAuditionApplicationVo">
+         SELECT audition_application_id AS auditionApplicationId,
+			   user_id AS userId,
+		       audition_application_title AS auditionApplicationTitle,
+		       audition_application_size AS auditionApplicationSize,
+		       expected_price AS expectedPrice,
+		       delivery_method AS deliveryMethod,
+		       delivery_address AS deliveryAddress,
+		       recipient_name AS recipientName,
+		       recipient_phone AS recipientPhone,
+		       CASE
+			       WHEN delivery_method = '픽업' THEN DATE_FORMAT(desired_pickup_date, '%Y-%m-%d')
+			       WHEN delivery_method = '배송' THEN DATE_FORMAT(desired_delivery_date, '%Y-%m-%d')
+			       ELSE NULL
+			       END AS desiredDate,
+		       CASE
+			       WHEN delivery_method = '픽업' THEN DATE_FORMAT(desired_pickup_time, '%H:%i')
+			       WHEN delivery_method = '배송' THEN DATE_FORMAT(desired_delivery_time, '%H:%i')
+			       ELSE NULL
+		       END AS desiredTime,
+		       region,
+		       cake_lettering AS cakeLettering, 
+		       plate_lettering AS plateLettering,
+		       additional_requests AS additionalRequests,
+		       design_id AS designId,
+		       image_url AS imageUrl,
+		       status,
+		       created_at AS createdAt
+		FROM AuditionApplication
+		WHERE user_id = #{userId}
+		AND status = '종료'
+		ORDER BY created_at DESC
+    </select>
+
+</mapper>

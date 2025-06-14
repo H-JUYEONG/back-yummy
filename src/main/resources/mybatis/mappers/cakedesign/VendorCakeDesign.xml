@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="venderCakeDesign">
+
+	<!-- 도안 정보 등록 -->
+	<insert id="insertVenderCakeDesign" parameterType="VendorCakeDesignVo" useGeneratedKeys="true" keyProperty="cakeDesignId">
+		INSERT INTO CakeDesign (member_id, cake_design_title, cake_design_description, cake_design_preferred_age, cake_design_recommended_event,
+		cake_design_preferred_shape, cake_design_visibility)
+		VALUES (#{memberId}, #{cakeDesignTitle}, #{cakeDesignDescription}, #{cakeDesignPreferredAge},
+		#{cakeDesignRecommendedEvent}, #{cakeDesignPreferredShape}, #{cakeDesignVisibility})
+	</insert>
+
+	<!-- 도안 이미지 등록 -->
+	<insert id="insertVenderCakeDesignImg" parameterType="VendorCakeDesignVo">
+		INSERT INTO CakeDesignImage (cake_design_id, cake_design_image_url)
+		VALUES (#{cakeDesignId}, #{cakeDesignImageUrl})
+	</insert>
+
+	<!-- 업체 도안 리스트 -->
+	<select id="selectVenderCakeDesignList" parameterType="int" resultType="VendorCakeDesignVo">
+		SELECT
+		c.cake_design_id AS cakeDesignId,
+		c.cake_design_title AS cakeDesignTitle,
+		c.cake_design_description AS cakeDesignDescription,
+		c.cake_design_preferred_age AS cakeDesignPreferredAge,
+		c.cake_design_recommended_event AS cakeDesignRecommendedEvent,
+		c.cake_design_preferred_shape AS cakeDesignPreferredShape,
+		c.cake_design_visibility AS cakeDesignVisibility,
+		(SELECT i.cake_design_image_url
+		FROM CakeDesignImage i
+		WHERE i.cake_design_id = c.cake_design_id
+		ORDER BY i.cake_design_image_id ASC
+		LIMIT 1) AS cakeDesignImageUrl
+		FROM
+		CakeDesign c
+		WHERE
+		c.member_id = #{memberId}
+		ORDER BY
+		c.cake_design_created_at DESC
+	</select>
+
+	<!-- 업체 도안 찜 리스트 -->
+	<select id="selectVenderCakeDesignLikeList" parameterType="int" resultType="VendorCakeDesignVo">
+		SELECT
+		c.cake_design_id AS cakeDesignId,
+		c.cake_design_title AS cakeDesignTitle,
+		c.cake_design_description AS cakeDesignDescription,
+		c.cake_design_preferred_age AS cakeDesignPreferredAge,
+		c.cake_design_recommended_event AS cakeDesignRecommendedEvent,
+		c.cake_design_preferred_shape AS cakeDesignPreferredShape,
+		c.cake_design_view_count AS cakeDesignViewCount,
+		c.cake_design_visibility AS cakeDesignVisibility,
+		(SELECT i.cake_design_image_url
+		FROM CakeDesignImage i
+		WHERE i.cake_design_id = c.cake_design_id
+		ORDER BY i.cake_design_image_id ASC
+		LIMIT 1) AS cakeDesignImageUrl
+		FROM
+		CakeDesignWishlist w
+		JOIN
+		CakeDesign c ON w.cake_design_id = c.cake_design_id
+		WHERE
+		w.member_id = #{memberId}
+		ORDER BY
+		w.cake_design_wishlist_id DESC
+	</select>
+
+	<!-- 도안 상세정보 및 이미지 데이터 함께 조회 -->
+	<select id="getCakeDesignDetailWithImages" parameterType="int" resultType="VendorCakeDesignVo">
+		SELECT
+		c.cake_design_id AS cakeDesignId,
+		c.cake_design_title AS cakeDesignTitle,
+		c.cake_design_description AS cakeDesignDescription,
+		c.cake_design_preferred_age AS cakeDesignPreferredAge,
+		c.cake_design_recommended_event AS cakeDesignRecommendedEvent,
+		c.cake_design_preferred_shape AS cakeDesignPreferredShape,
+		c.cake_design_view_count AS cakeDesignViewCount,
+		c.cake_design_created_at AS cakeDesignCreatedAt,
+		c.cake_design_visibility AS cakeDesignVisibility,
+		i.cake_design_image_url AS cakeDesignImageUrl
+		FROM
+		CakeDesign c
+		LEFT JOIN
+		CakeDesignImage i ON c.cake_design_id = i.cake_design_id
+		WHERE
+		c.cake_design_id = #{cakeDesignId}
+	</select>
+
+	<!-- 도안 정보 수정 -->
+	<update id="updateCakeDesignInfo" parameterType="VendorCakeDesignVo">
+		UPDATE CakeDesign
+		SET
+		cake_design_title = #{cakeDesignTitle},
+		cake_design_description = #{cakeDesignDescription},
+		cake_design_preferred_age = #{cakeDesignPreferredAge},
+		cake_design_recommended_event = #{cakeDesignRecommendedEvent},
+		cake_design_preferred_shape = #{cakeDesignPreferredShape},
+		cake_design_visibility = #{cakeDesignVisibility}
+		WHERE
+		cake_design_id = #{cakeDesignId}
+	</update>
+
+	<delete id="deleteCakeDesignImage">
+		DELETE FROM CakeDesignImage
+		WHERE cake_design_image_url = #{imageUrl}
+	</delete>
+
+	<insert id="insertCakeDesignImage" parameterType="VendorCakeDesignVo">
+		INSERT INTO CakeDesignImage (cake_design_id, cake_design_image_url)
+		VALUES (#{cakeDesignId}, #{cakeDesignImageUrl})
+	</insert>
+
+	<!-- 도안 소유자 확인 -->
+	<select id="isOwnerOfDesign" parameterType="map" resultType="int">
+		SELECT COUNT(*)
+		FROM CakeDesign
+		WHERE cake_design_id = #{cakeDesignId}
+		AND member_id = #{memberId}
+	</select>
+
+	<!-- Product 테이블 참조 개수 -->
+	<select id="countProductByDesignId" parameterType="int" resultType="int">
+		SELECT COUNT(*)
+		FROM Product
+		WHERE cake_design_id = #{cakeDesignId}
+	</select>
+
+	<!-- Review 테이블 참조 개수 -->
+	<select id="countReviewByDesignId" parameterType="int" resultType="int">
+		SELECT COUNT(*)
+		FROM Review r
+		JOIN Product p ON r.product_id = p.product_id
+		WHERE p.cake_design_id = #{cakeDesignId}
+	</select>
+
+	<!-- Order 테이블 참조 개수 -->
+	<select id="countOrderByDesignId" parameterType="int" resultType="int">
+		SELECT COUNT(*)
+		FROM `Order` o
+		JOIN Product p ON o.product_id = p.product_id
+		WHERE p.cake_design_id = #{cakeDesignId}
+	</select>
+
+	<!-- AuditionApplication 테이블 참조 개수 -->
+	<select id="countAuditionApplicationByDesignId" parameterType="int" resultType="int">
+		SELECT COUNT(*)
+		FROM AuditionApplication
+		WHERE design_id = #{cakeDesignId}
+	</select>
+
+	<!-- AuditionVendorCart 테이블 참조 개수 -->
+	<select id="countAuditionVendorCartByDesignId" parameterType="int" resultType="int">
+		SELECT COUNT(*)
+		FROM AuditionVendorCart avc
+		JOIN Product p ON avc.product_id = p.product_id
+		WHERE p.cake_design_id = #{cakeDesignId}
+	</select>
+	
+	<!-- CakeDesignWishlist 테이블 참조 개수 -->
+	<select id="countCakeDesignWishlistByDesignId" parameterType="int" resultType="int">
+	    SELECT COUNT(*)
+	    FROM CakeDesignWishlist
+	    WHERE cake_design_id = #{cakeDesignId}
+	</select>
+	
+	<!-- ProductWishlist 테이블 참조 개수  -->
+	<select id="countProductWishlistByDesignId" parameterType="int" resultType="int">
+	    SELECT COUNT(*)
+	    FROM ProductWishlist pw
+	    JOIN Product p ON pw.product_id = p.product_id
+	    WHERE p.cake_design_id = #{cakeDesignId}
+	</select>
+	
+	<!-- 도안 이미지 삭제 -->
+	<delete id="deleteCakeDesignImages" parameterType="int">
+	    DELETE FROM CakeDesignImage
+	    WHERE cake_design_id = #{cakeDesignId}
+	</delete>
+
+	<!-- 도안 삭제 -->
+	<delete id="deleteCakeDesign" parameterType="int">
+		DELETE FROM CakeDesign
+		WHERE cake_design_id = #{cakeDesignId}
+	</delete>
+
+</mapper>

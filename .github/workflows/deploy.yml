@@ -1,0 +1,53 @@
+name: Deploy Yummy App
+
+on: 
+  push: 
+    branches: 
+      - main # 마스터 브랜치로 GitHub에 push되었을 때
+
+jobs:
+  build-and-deploy:	# 첫 번째 작업: 빌드 및 배포
+    runs-on: ubuntu-latest			# 가상의 최신 Ubuntu 컴퓨터 생성
+    steps:							# step은 job 내부의 개별 단계
+      - name: Checkout code			# 단계 이름: 'Checkout code(소스 가져오기)' 
+        uses: actions/checkout@v3	# GitHub에서 제공하는 checkout@v3 기능으로 소스 가져오기
+
+      - name: Set up JDK 17			# 단계 이름: 'Set up JDK 17(JDK 17 설치)'
+        uses: actions/setup-java@v2	# GitHub에서 제공하는 setup-java@v2 기능으로 JDK 설치
+        with:
+          java-version: '17'		# Java 버전 17
+          distribution: 'temurin'	# 'temurin' OpenJDK 배포판
+
+      - name: Build with Maven		# 단계 이름: 'Build with Maven(Maven 빌드)' 
+        run: mvn clean package		# Maven build 명령어: clean package 실행
+
+      - name: Build Docker image	# 단계 이름: 'Build Docker image(Docker 이미지 빌드)' 
+        run: docker build -t aripos/yummy:latest . # Docker 이미지 빌드 명령어 (Docker Hub/레포지토리:태그)
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin # 비밀번호와 사용자명을 코드에 노출하지 않도록 처리 (GitHub에 설정한 값)
+      - name: Push Docker image to Docker Hub  # 단계 이름: 'Push Docker image to Docker Hub(Docker Hub에 이미지 푸시)' 
+        run: docker push aripos/yummy:latest # Docker 이미지 푸시 명령어 (Docker Hub/레포지토리:태그)
+
+         
+  SSH:  # 두 번째 작업: SSH
+    needs: build-and-deploy # 첫 번째 작업인 build-and-deploy 완료 후 실행
+    runs-on: ubuntu-latest  # 가상의 최신 Ubuntu 컴퓨터 생성
+    steps:  # step은 job 내부의 개별 단계
+      - uses: actions/checkout@v3 # GitHub에서 제공하는 checkout@v3 기능으로 소스 가져오기
+      - name: SSH to EC2	# 단계 이름: 'SSH to EC2(EC2에 SSH로 접근, MobaXterm에서 수행한 작업)'
+        uses: appleboy/ssh-action@master # GitHub에서 제공하는 ssh-action@master 기능 
+        with:
+          host: ${{ secrets.EC2_HOST }}					 # EC2 서버의 IP (GitHub에 설정된 1값)
+          username: ${{ secrets.EC2_USERNAME }}			 # EC2 서버의 계정명 (GitHub에 설정된 값)
+          key: ${{ secrets.SSH_PRIVATE_KEY }}			 # web.pem 키 (GitHub에 설정된 값)
+          script: |
+            sudo mkdir -p /home/ec2-user/upload			 
+            sudo docker pull aripos/yummy:latest
+            sudo docker stop yummy || true
+            sudo docker rm yummy || true
+            sudo docker run -d \
+              --name yummy \
+              -p 8080:8080 \
+              -v /home/ec2-user/upload:/app/upload \
+              aripos/yummy:latest

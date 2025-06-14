@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+
+<configuration>
+
+	<typeAliases>
+		<!-- user -->
+		<typeAlias type="com.javaex.user.model.JuUserVo" alias="JuUserVo"/>
+		<typeAlias type="com.javaex.user.model.JuLoginVo" alias="JuLoginVo"/>
+		<typeAlias type="com.javaex.user.model.JuAnniversaryVo" alias="JuAnniversaryVo"/>
+		<typeAlias type="com.javaex.user.model.DdrUserVo" alias="DdrUserVo"/> <!-- 사용 여부 확인 필요 -->
+		<typeAlias type="com.javaex.user.model.DdrUserNicknameVo" alias="DdrUserNicknameVo"/>
+		<typeAlias type="com.javaex.user.model.JeffUserEventVo" alias="JeffUserEventVo"/>
+		<typeAlias type="com.javaex.user.model.JeffUserPersonalInfoEditVo" alias="JeffUserPersonalInfoEditVo"/> <!-- 사용 여부 확인 필요 -->
+		<typeAlias type="com.javaex.user.model.JeffUserProfileVo" alias="JeffUserProfileVo"/>
+		
+		<!-- vendor -->
+		<typeAlias type="com.javaex.vendor.model.HyunAdminVenderVo" alias="HyunAdminVenderVo"/>
+		<typeAlias type="com.javaex.vendor.model.HyunVenderVo" alias="HyunVenderVo"/>
+		<typeAlias type="com.javaex.vendor.model.SsoVenderProductVo" alias="SsoVenderProductVo"/>
+		<typeAlias type="com.javaex.vendor.model.SvenderVo" alias="SvenderVo"/>
+		<typeAlias type="com.javaex.vendor.model.DdrVenderVo" alias="DdrVenderVo"/>
+		
+		<!-- admin -->
+		<typeAlias type="com.javaex.admin.model.HyunAdminMemberVo" alias="HyunAdminMemberVo"/>
+		
+		<!-- product -->
+		<typeAlias type="com.javaex.product.model.DdrProductVo" alias="DdrProductVo"/>
+		<typeAlias type="com.javaex.product.model.HyunProductRegistrationVo" alias="HyunProductRegistrationVo"/>
+		<typeAlias type="com.javaex.product.model.HyunProductVo" alias="HyunProductVo"/>
+		<typeAlias type="com.javaex.product.model.JeffLikedProductVo" alias="JeffLikedProductVo"/>
+		
+		<!-- option -->
+		<typeAlias type="com.javaex.option.model.DdrOptionVo" alias="DdrOptionVo"/>
+		<typeAlias type="com.javaex.option.model.HyunOptionTypeVO" alias="HyunOptionTypeVO"/>
+		<typeAlias type="com.javaex.option.model.HyunOptionValueVO" alias="HyunOptionValueVO"/>
+		
+		<!-- order -->
+		<typeAlias type="com.javaex.order.model.DdrOrderStatusVo" alias="DdrOrderStatusVo"/>
+		<typeAlias type="com.javaex.order.model.DdrOrderVo" alias="DdrOrderVo"/>
+		<typeAlias type="com.javaex.order.model.HyunOrderDetailVo" alias="HyunOrderDetailVo"/>
+		<typeAlias type="com.javaex.order.model.HyunOrderVo" alias="HyunOrderVo"/>
+		<typeAlias type="com.javaex.order.model.JuOrderVo" alias="JuOrderVo"/>
+		
+		<!-- review -->
+		<typeAlias type="com.javaex.review.model.DdrReviewReplyVo" alias="DdrReviewReplyVo"/>
+		<typeAlias type="com.javaex.review.model.DdrReviewStatsVo" alias="DdrReviewStatsVo"/> <!-- 사용 여부 확인 필요 -->
+		<typeAlias type="com.javaex.review.model.DdrReviewStatusVo" alias="DdrReviewStatusVo"/> <!-- 사용 여부 확인 필요 -->
+		<typeAlias type="com.javaex.review.model.DdrReviewVo" alias="DdrReviewVo"/>
+		<typeAlias type="com.javaex.review.model.HyunReviewVo" alias="HyunReviewVo"/>
+		<typeAlias type="com.javaex.review.model.JeffReviewVo" alias="JeffReviewVo"/>
+		<typeAlias type="com.javaex.review.model.ReviewAnalysisVo" alias="ReviewAnalysisVo"/>
+		
+		<!-- mypage -->
+		<typeAlias type="com.javaex.mypage.model.DdrMypageOrderDetailVo" alias="DdrMypageOrderDetailVo"/>
+		<typeAlias type="com.javaex.mypage.model.DdrMypageOrderStatusCountVo" alias="DdrMypageOrderStatusCountVo"/>
+		<typeAlias type="com.javaex.mypage.model.DdrMypageOrderVideoVo" alias="DdrMypageOrderVideoVo"/>
+		<typeAlias type="com.javaex.mypage.model.DdrMypageOrderVo" alias="DdrMypageOrderVo"/>
+		<typeAlias type="com.javaex.mypage.model.DdrMypagePointHistoryVo" alias="DdrMypagePointHistoryVo"/> <!-- 사용 여부 확인 필요 -->
+		<typeAlias type="com.javaex.mypage.model.DdrMypageWishlistVo" alias="DdrMypageWishlistVo"/>
+		<typeAlias type="com.javaex.mypage.model.DdrWishlistVo" alias="DdrWishlistVo"/>
+		
+		<!-- cakedesign -->
+		<typeAlias type="com.javaex.cakedesign.model.JeffLikedDesignVo" alias="JeffLikedDesignVo"/>
+		<typeAlias type="com.javaex.cakedesign.model.CakeDesignReviewVo" alias="CakeDesignReviewVo"/>
+		<typeAlias type="com.javaex.cakedesign.model.VendorCakeDesignVo" alias="VendorCakeDesignVo"/>
+		
+		<!-- audition -->
+		<typeAlias type="com.javaex.audition.model.JuAuditionApplicationVo" alias="JuAuditionApplicationVo"/>
+		<typeAlias type="com.javaex.audition.model.JuAuditionVendorCartVo" alias="JuAuditionVendorCartVo"/>
+		<typeAlias type="com.javaex.audition.model.SauditionInsertVo" alias="SauditionInsertVo"/>
+		<typeAlias type="com.javaex.audition.model.SauditionStatusVo" alias="SauditionStatusVo"/>
+		<typeAlias type="com.javaex.audition.model.SsoAuditionOptionVo" alias="SsoAuditionOptionVo"/>
+		<typeAlias type="com.javaex.audition.model.SsoAuditionVo" alias="SsoAuditionVo"/>
+		
+		<!-- debate -->
+		<typeAlias type="com.javaex.debate.model.JeffDebateVo" alias="JeffDebateVo"/>
+		<typeAlias type="com.javaex.debate.model.JeffCommentVo" alias="JeffCommentVo"/>
+		<typeAlias type="com.javaex.debate.model.JeffVoteVo" alias="JeffVoteVo"/>
+		
+		<!-- ai -->
+		<typeAlias type="com.javaex.ai.model.OpenAiVo" alias="OpenAiVo"/>
+		<typeAlias type="com.javaex.ai.model.SearchEmbeddingVo" alias="SearchEmbeddingVo"/>
+
+	</typeAliases>
+
+	<mappers>
+		<mapper resource="mybatis/mappers/user/JuUser.xml" />
+		<mapper resource="mybatis/mappers/user/JeffUser.xml" />
+		<mapper resource="mybatis/mappers/user/DdrUser.xml" />
+		<mapper resource="mybatis/mappers/vendor/hyunVenderMapper.xml" />
+		<mapper resource="mybatis/mappers/vendor/sVender.xml" />
+		<mapper resource="mybatis/mappers/admin/hyunAdminMapper.xml" />
+		<mapper resource="mybatis/mappers/product/hyunProductMapper.xml" />
+		<mapper resource="mybatis/mappers/product/product.xml" />
+		<mapper resource="mybatis/mappers/option/hyunOptionMapper.xml" />
+		<mapper resource="mybatis/mappers/order/hyunOrderMapper.xml" />
+		<mapper resource="mybatis/mappers/order/order.xml" />
+		<mapper resource="mybatis/mappers/review/DdrReview.xml" />
+		<mapper resource="mybatis/mappers/review/ReviewAnalysis.xml" />
+		<mapper resource="mybatis/mappers/mypage/DdrWishlist.xml" />
+		<mapper resource="mybatis/mappers/mypage/DdrMypage.xml" />
+		<mapper resource="mybatis/mappers/mypage/DdrMypageWishlist.xml" />
+		<mapper resource="mybatis/mappers/mypage/DdrMypagePointHistory.xml" />
+		<mapper resource="mybatis/mappers/cakedesign/UserCakeDesign.xml" />
+		<mapper resource="mybatis/mappers/cakedesign/VendorCakeDesign.xml" />
+		<mapper resource="mybatis/mappers/cakedesign/DdrCakeDesign.xml" />
+		<mapper resource="mybatis/mappers/audition/JuAudition.xml" />
+		<mapper resource="mybatis/mappers/audition/SsoAudition.xml" />
+		<mapper resource="mybatis/mappers/debate/JeffDebate.xml" />
+		<mapper resource="mybatis/mappers/ai/openAi.xml" />
+		<mapper resource="mybatis/mappers/ai/SearchEmbeddingMapper.xml" />
+	</mappers>
+
+</configuration>

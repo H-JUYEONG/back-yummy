@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="searchEmbedding">
+
+    <select id="getAllEmbeddings" resultType="com.javaex.ai.model.SearchEmbeddingVo">
+        SELECT id,
+               table_name    AS tableName,
+               original_id   AS originalId,
+               combined_text AS combinedText,
+               embedding
+        FROM search_embedding
+    </select>
+
+    <insert id="insert" parameterType="com.javaex.ai.model.SearchEmbeddingVo">
+        INSERT INTO search_embedding (table_name, original_id, combined_text, embedding)
+        VALUES (#{tableName}, #{originalId}, #{combinedText}, #{embedding})
+    </insert>
+
+    <select id="existsByTableNameAndOriginalId" resultType="boolean" parameterType="map">
+        SELECT EXISTS (SELECT 1
+                       FROM search_embedding
+                       WHERE table_name = #{tableName}
+                         AND original_id = #{originalId})
+    </select>
+
+</mapper>

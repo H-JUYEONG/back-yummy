@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="openAi">
+
+	<!-- 키워드로 FAQ 검색 -->
+	<select id="searchFaqByKeyword" parameterType="string"
+		resultType="OpenAiVo">
+		SELECT
+		id AS faqId,
+		question AS faqQuestion,
+		answer AS faqAnswer,
+		tags AS
+		faqTags
+		FROM faq
+		WHERE question LIKE CONCAT('%', #{keyword}, '%')
+		ORDER
+		BY id ASC
+		LIMIT 5; <!-- 필요한 경우 결과 개수를 제한 -->
+	</select>
+
+	<select id="getTableMetadata" resultType="map">
+		SELECT TABLE_NAME, COLUMN_NAME
+		FROM INFORMATION_SCHEMA.COLUMNS
+		WHERE TABLE_SCHEMA = 'your_database_name';
+	</select>
+	<select id="getAllFaqs" resultType="OpenAiVo">
+		SELECT *
+		FROM faq
+	</select>
+
+</mapper>

@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="JeffDebate">
+
+	<!-- 게시판 총 데이터 개수 가져오기 -->
+<select id="selectDebateList" parameterType="map" resultType="JeffDebateVo">
+<![CDATA[
+SELECT 
+    d.debate_id,
+    d.member_id,
+    u.user_nickname,
+    d.debate_title,
+    d.debate_category,
+    d.debate_left_item_type,
+    d.debate_left_item_id,
+    d.debate_left_image_url,
+    d.debate_right_item_type,
+    d.debate_right_item_id,
+    d.debate_right_image_url,
+    d.debate_content,
+    d.debate_view_count,
+    d.debate_created_at
+FROM Debate d
+LEFT JOIN Member m ON d.member_id = m.member_id
+LEFT JOIN User u ON m.member_id = u.member_id
+WHERE 
+    (#{searchTerm} IS NULL OR #{searchTerm} = '' OR d.debate_title LIKE CONCAT('%', #{searchTerm}, '%'))
+    AND (#{category} IS NULL OR #{category} = '' OR d.debate_category = #{category})
+ORDER BY d.debate_created_at DESC
+LIMIT #{offset}, #{size};
+]]>
+</select>
+
+<!-- 게시판 총 데이터 개수 가져오기 -->
+<select id="selectDebateListCount" parameterType="map" resultType="int">
+SELECT
+    COUNT(*)
+FROM Debate d
+WHERE 
+    (#{searchTerm} IS NULL OR #{searchTerm} = '' OR d.debate_title LIKE CONCAT('%', #{searchTerm}, '%'))
+    AND (#{category} IS NULL OR #{category} = '' OR d.debate_category = #{category});
+
+</select>
+
+<insert id="insertDebate" parameterType="JeffDebateVo">
+    <![CDATA[
+    INSERT INTO Debate (
+        member_id,
+        debate_title,
+        debate_category,
+        debate_left_item_type,
+        debate_left_item_id,
+        debate_left_image_url,
+        debate_right_item_type,
+        debate_right_item_id,
+        debate_right_image_url,
+        debate_content,
+        debate_view_count,
+        debate_created_at
+    ) VALUES (
+        #{member_id},
+        #{debate_title},
+        #{debate_category},
+        #{debate_left_item_type},
+        #{debate_left_item_id,jdbcType=INTEGER},
+        #{debate_left_image_url},
+        #{debate_right_item_type},
+        #{debate_right_item_id,jdbcType=INTEGER},
+        #{debate_right_image_url},
+        #{debate_content},
+        0,
+        CURRENT_TIMESTAMP
+    );
+    ]]>
+</insert>
+
+<update id="updateDebate" parameterType="JeffDebateVo">
+    <![CDATA[
+    UPDATE debate
+    SET
+        debate_title = #{debate_title},
+        debate_category = #{debate_category},
+        debate_left_item_type = #{debate_left_item_type},
+        debate_left_item_id = #{debate_left_item_id},
+        debate_left_image_url = #{debate_left_image_url},
+        debate_right_item_type = #{debate_right_item_type},
+        debate_right_item_id = #{debate_right_item_id},
+        debate_right_image_url = #{debate_right_image_url},
+        debate_content = #{debate_content}
+    WHERE debate_id = #{debate_id}
+    ]]>
+</update>
+
+<!--for modal   -->
+<select id="selectWishlistProducts" parameterType="JeffLikedProductVo" resultType="JeffLikedProductVo">
+    SELECT
+        pw.product_wishlist_id AS productWishlistId,
+        p.product_id AS productId,
+        p.product_name AS productName,
+        p.product_price AS productPrice,
+        p.product_image1_url AS productImageUrl
+    FROM
+        ProductWishlist pw
+        JOIN Product p ON pw.product_id = p.product_id
+        LEFT JOIN ProductOptionTypeMapping potm ON p.product_id = potm.product_id
+        LEFT JOIN OptionType ot ON potm.option_type_id = ot.option_type_id
+        LEFT JOIN OptionValue ov ON potm.option_value_id = ov.option_value_id
+    WHERE
+        pw.member_id = #{memberId}
+        <if test="searchKeyword != null and searchKeyword != ''">
+            AND p.product_name LIKE CONCAT('%', #{searchKeyword}, '%')
+        </if>
+    GROUP BY
+        pw.product_wishlist_id,
+        p.product_id,
+        p.product_name,
+        p.product_price,
+        p.product_image1_url
+    ORDER BY
+        pw.product_wishlist_id DESC
+    LIMIT #{size} OFFSET #{offset}
+</select>
+
+<select id="selectWishlistProductsCount" parameterType="JeffLikedProductVo" resultType="int">
+    SELECT
+        COUNT(DISTINCT pw.product_wishlist_id)
+    FROM
+        ProductWishlist pw
+        JOIN Product p ON pw.product_id = p.product_id
+        LEFT JOIN ProductOptionTypeMapping potm ON p.product_id = potm.product_id
+        LEFT JOIN OptionType ot ON potm.option_type_id = ot.option_type_id
+        LEFT JOIN OptionValue ov ON potm.option_value_id = ov.option_value_id
+    WHERE
+        pw.member_id = #{memberId}
+        <if test="searchKeyword != null and searchKeyword != ''">
+            AND p.product_name LIKE CONCAT('%', #{searchKeyword}, '%')
+        </if>
+</select>
+
+<select id="selectWishlistDesign" parameterType="JeffLikedDesignVo" resultType="JeffLikedDesignVo">
+    SELECT
+        cwd.cake_design_wishlist_id AS cake_design_wishlist_id,
+        cd.cake_design_id AS cake_design_id,
+        cwd.member_id AS memberId,
+        cd.cake_design_title AS cake_design_title,
+        cdi.cake_design_image_url AS cake_design_image_url
+    FROM
+        CakeDesignWishlist cwd
+        JOIN CakeDesign cd ON cwd.cake_design_id = cd.cake_design_id
+        LEFT JOIN CakeDesignImage cdi ON cd.cake_design_id = cdi.cake_design_id
+    WHERE
+        cwd.member_id = #{memberId}
+        <if test="searchKeyword != null and searchKeyword != ''">
+            AND cd.cake_design_title LIKE CONCAT('%', #{searchKeyword}, '%')
+        </if>
+    ORDER BY
+        cwd.cake_design_wishlist_id DESC
+    LIMIT #{size} OFFSET #{offset}
+</select>
+
+
+<select id="selectWishlistDesignCount" parameterType="JeffLikedDesignVo" resultType="int">
+    SELECT
+        COUNT(DISTINCT cwd.cake_design_wishlist_id)
+    FROM
+        CakeDesignWishlist cwd
+        JOIN CakeDesign cd ON cwd.cake_design_id = cd.cake_design_id
+    WHERE
+        cwd.member_id = #{memberId}
+        <if test="searchKeyword != null and searchKeyword != ''">
+            AND cd.cake_design_title LIKE CONCAT('%', #{searchKeyword}, '%')
+        </if>
+</select>
+
+
+
+
+<update id="updateViewCount" parameterType="int">
+    <![CDATA[
+    UPDATE Debate
+    SET debate_view_count = debate_view_count + 1
+    WHERE debate_id = #{debateId};
+    ]]>
+</update>
+
+<select id="getDebateDetail" parameterType="int" resultType="JeffDebateVo">
+<![CDATA[
+    SELECT 
+        d.debate_id,
+        d.member_id,
+        u.user_nickname,
+        d.debate_title,
+        d.debate_category,
+        d.debate_left_item_type,
+        d.debate_left_item_id,
+        d.debate_left_image_url,
+        d.debate_right_item_type,
+        d.debate_right_item_id,
+        d.debate_right_image_url,
+        d.debate_content,
+        d.debate_view_count,
+        d.debate_created_at
+    FROM Debate d
+    LEFT JOIN Member m ON d.member_id = m.member_id
+    LEFT JOIN User u ON m.member_id = u.member_id
+    WHERE d.debate_id = #{debateId}
+]]>
+</select>
+
+<select id="getCommentList" parameterType="int" resultType="JeffCommentVo">
+    <![CDATA[
+    SELECT 
+    dc.debate_comment_id,
+    dc.debate_id,
+    dc.member_id,
+    COALESCE(u.user_nickname, 'Anonymous') AS user_nickname,
+    COALESCE(u.user_profile_image_url, '') AS user_profile_image_url,
+    dc.debate_comment_content,
+    dc.debate_comment_created_at
+FROM DebateComment dc
+LEFT JOIN User u ON dc.member_id = u.member_id
+WHERE dc.debate_id = #{debateId}
+ORDER BY dc.debate_comment_id ASC;
+
+    ]]>
+</select>
+
+<insert id="insertComment" parameterType="JeffCommentVo">
+    INSERT INTO DebateComment (
+        debate_id,
+        member_id,
+        debate_comment_content,
+        debate_comment_created_at
+    )
+    VALUES (
+        #{debate_id},
+        #{member_id},
+        #{debate_comment_content},
+        NOW()
+    )
+</insert>
+
+    <!-- Get Vote List -->
+    <select id="selectVoteList" parameterType="int" resultType="JeffVoteVo">
+        SELECT 
+            debate_id,
+            member_id,
+            side
+        FROM DebateVote
+        WHERE debate_id = #{debateId}
+    </select>
+    
+    <insert id="insertVote" parameterType="JeffVoteVo">
+        INSERT INTO DebateVote (debate_id, member_id, side)
+SELECT #{debate_id}, #{member_id}, #{side}
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM DebateVote
+    WHERE debate_id = #{debate_id} AND member_id = #{member_id}
+);
+    </insert>
+    
+<update id="updateVote" parameterType="JeffVoteVo">
+    <![CDATA[
+    UPDATE DebateVote
+    SET side = #{side}
+    WHERE debate_id = #{debate_id} AND member_id = #{member_id}
+    ]]>
+</update>
+    
+<delete id="deleteVote" parameterType="JeffVoteVo">
+    <![CDATA[
+    DELETE FROM DebateVote
+    WHERE debate_id = #{debate_id} AND member_id = #{member_id}
+    ]]>
+</delete>
+
+<delete id="deleteDebateComments" parameterType="JeffVoteVo">
+    DELETE FROM DebateComment
+    WHERE debate_id = #{debate_id}
+</delete>
+
+<delete id="deleteDebateVotes" parameterType="JeffVoteVo">
+    DELETE FROM DebateVote
+    WHERE debate_id = #{debate_id}
+</delete>
+
+<delete id="deleteDebate" parameterType="JeffVoteVo">
+    DELETE FROM Debate
+    WHERE debate_id = #{debate_id}
+    AND member_id = #{member_id}
+</delete>
+
+
+</mapper>

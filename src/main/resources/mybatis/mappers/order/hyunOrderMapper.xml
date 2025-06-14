@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="hyunOrderMapper">
+	<select id="getOrdersByVenderId" parameterType="int" resultType="HyunOrderVo">
+		SELECT DISTINCT
+		od.product_id AS productId,
+		od.order_id AS orderId,
+		od.user_id AS userId,
+		p.product_name AS productName,
+		od.order_date AS orderDate,
+		od.desired_delivery_date AS desiredDeliveryDate,
+		od.desired_delivery_time AS desiredDeliveryTime,
+		od.desired_pickup_datetime AS desiredPickupDatetime,
+		od.delivery_method AS deliveryMethod,
+		od.order_status AS orderStatus
+		FROM `Order` od
+		LEFT JOIN Product p ON
+		od.product_id = p.product_id
+		WHERE vender_id = #{venderId}
+		ORDER BY od.order_date DESC;
+	</select>
+
+	<select id="getOrderDetailsById" parameterType="int" resultType="HyunOrderDetailVo">
+		SELECT DISTINCT
+		od.product_id AS productId,
+		od.order_id AS orderId,
+		od.user_id AS userId,
+		p.product_name AS productName,
+		od.delivery_address AS deliveryAddress,
+		od.desired_delivery_date AS desiredDeliveryDate,
+		od.desired_delivery_time AS
+		desiredDeliveryTime,
+		od.desired_pickup_datetime AS desiredPickupDatetime,
+		od.desired_pickup_time AS desiredPickupTime,
+		od.delivery_method AS deliveryMethod,
+		od.order_status AS orderStatus,
+		od.product_type AS productType,
+		od.cake_size AS cakeSize,
+		od.flavor_sheet AS flavorSheet,
+		od.flavor_cream AS flavorCream,
+		od.cake_background_color AS cakeBackgroundColor,
+		od.cream_position AS creamPosition,
+		od.cream_color AS creamColor,
+		od.decoration_type AS decorationType,
+		od.decoration_color AS decorationColor,
+		od.total_price AS totalPrice,
+		od.cake_lettering AS cakeLettering,
+		od.plate_lettering AS plateLettering,
+		od.additional_requests AS additionalRequests,
+		p.product_image1_url AS productImageUrl,
+		p.cake_design_id AS cakeDesignId,
+		cdi.cake_design_image_url AS
+		cakeDesignImageUrl,
+		od.settlement_price As settlementPrice
+		FROM `Order` od
+		LEFT JOIN Product p ON od.product_id = p.product_id
+		LEFT JOIN CakeDesignImage cdi ON p.cake_design_id = cdi.cake_design_id
+		WHERE od.order_id = #{orderId}
+		GROUP BY od.order_id
+	</select>
+
+	<update id="updateOrderStatus" parameterType="map">
+		UPDATE `Order`
+		SET order_status = #{orderStatus}
+		WHERE order_id = #{orderId}
+	</update>
+
+	<update id="updateOrderMedia">
+		UPDATE `Order`
+		SET
+		order_video_url = CASE WHEN #{videoUrl} IS NOT NULL THEN #{videoUrl} ELSE order_video_url END,
+		order_photo_url = CASE WHEN #{photoUrl} IS NOT NULL THEN #{photoUrl} ELSE order_photo_url END
+		WHERE order_id = #{orderId}
+	</update>
+</mapper>

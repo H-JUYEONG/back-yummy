@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="hyunAdminMapper">
+	<select id="selectAllMembers" resultType="HyunAdminMemberVo">
+		SELECT u.user_id AS uid,
+		u.user_provider AS joinType,
+		m.email,
+		m.is_active AS status,
+		m.name,
+		m.created_at AS
+		joinDate
+		FROM User
+		u
+		LEFT JOIN Member m ON u.member_id = m.member_id ORDER BY user_id desc
+	</select>
+
+	<select id="selectAllVenders" resultType="HyunAdminVenderVo">
+		SELECT v.vender_id AS venderId,
+		v.vender_name AS venderName,
+		v.vender_address AS venderAddress,
+		v.vender_number AS
+		venderNumber,
+		v.representative_name AS representativeName,
+		m.email,
+		m.phone_number AS
+		phoneNumber,
+		m.created_at AS createdAt,
+		v.latitude,
+		v.longitude
+		FROM
+		Vender v
+		LEFT JOIN Member m ON v.member_id = m.member_id
+		WHERE
+		m.is_active = 1
+		ORDER BY v.vender_id DESC
+	</select>
+
+	<select id="selectApprovalVenders" resultType="HyunAdminVenderVo">
+		SELECT
+		m.member_id AS memberId,   <!-- memberId를 반환 -->
+		v.vender_name AS venderName,
+		v.representative_name AS representativeName,
+		m.email,
+		v.business_license_url AS businessLicenseUrl,
+		m.is_active AS status
+		FROM Member
+		m
+		LEFT JOIN Vender v ON m.member_id = v.member_id
+		WHERE m.is_active = 0 AND m.type = '업체';
+	</select>
+
+	<update id="updateMemberStatus">
+		UPDATE Member
+		SET is_active = #{isActive}
+		WHERE member_id = #{memberId}; <!-- memberId를 기준으로 업데이트 -->
+	</update>
+
+
+	<select id="selectGetOrders" resultType="map">
+		SELECT
+		o.order_id as orderId,
+		v.vender_name as venderName,
+		o.recipient_name AS recipientName,
+		o.order_date as
+		orderDate,
+		o.total_price AS totalPrice,
+		o.order_status as orderStatus
+		FROM `Order` o
+		LEFT JOIN Product p ON o.product_id = p.product_id
+		LEFT JOIN Vender v ON
+		p.vender_id = v.vender_id
+		ORDER BY o.order_date DESC
+	</select>
+
+
+	<select id="getAllReports" resultType="HyunReviewVo">
+		SELECT
+		r.review_id AS reviewId,
+		r.review_content AS reviewContent,
+		r.report_reason AS reason,
+		r.report_date AS
+		reportCreatedAt,
+		CONCAT('/user/cakedetail/', p.product_id, '/', p.vender_id) AS link , -- 게시물 링크 생성
+		u.user_nickname as userNickname
+		FROM Review r
+		JOIN Product p
+		ON r.product_id = p.product_id -- Product 테이블 조인
+		join User u on r.report_user_id = u.user_id
+		WHERE is_reported = 1;
+	</select>
+
+	<delete id="deleteReview">
+		DELETE FROM Review
+		WHERE review_id = #{reviewId};
+	</delete>
+
+	<update id="resetReport">
+		UPDATE Review
+		SET is_reported = 0,
+		report_reason = NULL,
+		report_date = NULL
+		WHERE review_id = #{reviewId};
+	</update>
+
+</mapper>

@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="sVender">
+
+	<!-- 업체 등록여부확인 -->
+	<select id="checkNo" parameterType="int" resultType="int">
+		<![CDATA[
+			select shop_status as shopStatus
+			from Vender
+			where vender_id = #{venderId}
+		]]>
+	
+	</select>
+	
+	<!-- 업체 상태변경 : 1 (생성, 비활성) -->
+	<update id="updateOne" parameterType="int">
+		<![CDATA[
+			update Vender
+			set shop_status = 1
+			where vender_id = #{venderId}
+			and shop_status = 0
+		]]>
+	</update>
+	
+	<!-- 업체등록 -->
+	<update id="venderMakePage" parameterType="SvenderVo">
+		<![CDATA[
+		
+			update Vender
+			set  vender_name = #{venderName}
+				,vender_address = #{venderAddress}
+			    ,district = #{district}
+			    ,latitude = #{latitude} 
+			    ,longitude = #{longitude}
+			    ,banner_url = #{bannerURL}
+			    ,vender_profile_image_url = #{profileURL}
+			    ,kakao_url = #{kakaoURL}
+			    ,vender_description = #{venderDescription}
+			where vender_id = #{venderId}
+				
+		]]>
+	</update>
+	
+	<!-- 업체수정정보 -->
+	<select id="selectAll" parameterType="int" resultType="SvenderVo">
+		<![CDATA[
+			select	 vender_name as venderName
+					,banner_url as bannerURL
+			        ,vender_profile_image_url as profileURL
+			        ,vender_address as venderAddress
+			        ,latitude
+			        ,longitude
+			        ,kakao_url as kakaoURL
+			        ,district
+			        ,vender_description as venderDescription
+			        ,shop_status as shopStatus
+			from Vender
+			where vender_id =#{venderId}
+		]]>
+	
+	</select>
+	
+	
+	
+	<!-- ///////////////업체별 정보 가져오기 -->
+	<select id="getDetails" parameterType="int" resultType="SvenderVo">
+		<![CDATA[
+			select	 vender_id as venderId
+					,vender_name as venderName
+					,vender_address as venderAddress
+					,latitude
+			        ,longitude
+			        ,district
+			        ,banner_url as bannerURL
+			        ,vender_profile_image_url as profileURL
+			        ,kakao_url as kakaoURL
+			        ,vender_description as venderDescription
+			        ,shop_status as shopStatus
+			from Vender
+			where vender_id = #{venderId}
+		]]>
+	
+	</select>
+	<!-- 헤더부분 배너이미지 -->
+	<select id="getBanner" parameterType="int" resultType="String">
+		<![CDATA[
+			select banner_url as bannerURL
+			from Vender
+			where vender_id = #{venderId}
+		]]>
+	
+	</select>
+	
+	<!-- 업체 전체 상품 가져오기 -->
+	<select id="getAllProductListShop" parameterType="int" resultType="SsoVenderProductVo">
+		<![CDATA[
+			select	 vender_id as venderId
+					,product_id as productId
+			        ,product_name as productName
+			        ,ROUND(product_price, 0) as productPrice
+			        ,product_image1_url as productURL
+			from Product
+			where vender_id = #{venderId}
+			and is_visible = 1
+		]]>
+	
+	</select>
+	
+	<!-- 카테고리에 맞는 업체 상품리스트 가져오기 -->
+	<select id="getProductList" parameterType="SsoVenderProductVo" resultType="SsoVenderProductVo">
+		<![CDATA[
+			select	 pm.product_id as productId
+					,pm.option_type_id as optionTypeId
+			        ,pm.option_value_id as optionValueId
+			        ,p.vender_id as venderId
+			        ,p.product_name as productName
+			        ,ROUND(p.product_price, 0) as productPrice
+			        ,p.product_image1_url as productURL
+			from ProductOptionTypeMapping pm
+			JOIN Product p
+			ON p.product_id = pm.product_id
+			where vender_id = #{venderId}
+			and is_visible = 1
+			and option_type_id = 10
+			and option_value_id = #{optionValueId}
+		]]>
+	
+	</select>	
+	<!-- 옵션 종류 가져오기 -->
+	<select id="getCarList" parameterType="int" resultType="SsoVenderProductVo">
+		<![CDATA[
+			SELECT 			o.option_value_id as optionValueId,
+						    vender_id as venderId,
+						    option_value_name as optionValueName,
+						    MAX(option_value_image_url) as option_value_image_url
+						FROM OptionValue o
+						JOIN OptionType ot ON o.option_type_id = ot.option_type_id
+						WHERE vender_id = #{venderId}
+						  AND ot.option_type_id = 10
+						GROUP BY vender_id, option_value_name
+		]]>
+	</select>
+	
+	<!-- 사이드바 프로필사진 가져오기 -->
+	<select id="getLogo" parameterType="int" resultType="String">
+		<![CDATA[
+			select	 vender_profile_image_url as profileURL
+			from Vender
+			where vender_id = #{venderId}
+		]]>
+	</select>
+	
+</mapper>

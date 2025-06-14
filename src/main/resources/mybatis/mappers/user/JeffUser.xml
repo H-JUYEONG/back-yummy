@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="JeffUser">
+
+    <!-- Get User Detail -->
+    <select id="getUserDetail" parameterType="int" resultType="JeffUserProfileVo">
+        SELECT
+            m.member_id AS memberId,
+            m.email,
+            m.phone_number AS phoneNumber,
+            m.name,
+            m.password_hash AS passwordHash,
+            u.user_nickname AS userNickname,
+            u.user_profile_image_url AS userProfileImageUrl
+        FROM
+            User u
+        RIGHT JOIN
+            Member m ON u.member_id = m.member_id
+        WHERE
+            m.member_id = #{userId}
+    </select>
+
+<!-- WritingList -->
+    <!-- Get User Event List -->
+    <select id="getUserEventList" parameterType="int" resultType="JeffUserEventVo">
+        SELECT
+            a.anniversary_id AS anniversaryId,
+            a.anniversary_name AS eventName,
+            a.anniversary_date AS eventDate,
+            a.is_notification_enabled AS notificationEnabled
+        FROM
+            Anniversary a
+        WHERE
+            a.user_id = (
+                SELECT
+                    u.user_id
+                FROM
+                    User u
+                WHERE
+                    u.member_id = #{memberId}
+            )
+    </select>
+
+    <!-- Update User Profile -->
+    <update id="updateUserProfile" parameterType="JeffUserProfileVo">
+        UPDATE
+            Member m
+        JOIN
+            User u ON u.member_id = m.member_id
+        SET
+            m.phone_number = #{phoneNumber},
+            m.password_hash = #{passwordHash},
+            u.user_nickname = #{userNickname},
+            u.user_profile_image_url = COALESCE(#{userProfileImageUrl}, u.user_profile_image_url)
+        WHERE
+            m.member_id = #{memberId}
+    </update>
+
+    <!-- Insert User Event -->
+    <insert id="insertUserEvent" parameterType="JeffUserEventVo">
+        INSERT INTO Anniversary (
+            user_id,
+            anniversary_name,
+            anniversary_date,
+            notification_date
+        )
+        VALUES (
+            (SELECT u.user_id FROM User u WHERE u.member_id = #{userId}),
+            #{eventName},
+            #{eventDate},
+            DATE_SUB(#{eventDate}, INTERVAL 7 DAY)
+        )
+    </insert>
+
+    <!-- Delete User Event -->
+    <delete id="deleteUserEvent" parameterType="int">
+        DELETE FROM Anniversary
+        WHERE anniversary_id = #{eventId}
+    </delete>
+
+    <!-- Withdraw User -->
+    <update id="withdrawUser" parameterType="int">
+        UPDATE Member
+        SET
+            is_active = 0
+        WHERE
+            member_id = #{memberId}
+    </update>
+
+    <!-- Select Debate List for a User -->
+<select id="selectDebateList" parameterType="map" resultType="JeffDebateVo">
+    SELECT 
+        d.debate_id,
+        d.member_id,
+        d.debate_title,
+        d.debate_category,
+        d.debate_created_at
+    FROM Debate d
+    WHERE d.member_id = #{memberId} 
+    AND (#{searchTerm} IS NULL OR #{searchTerm} = '' OR d.debate_title LIKE CONCAT('%', #{searchTerm}, '%'))
+    ORDER BY d.debate_created_at DESC
+    LIMIT #{offset}, #{size}
+</select>
+
+
+    <!-- Count Debate List for a User -->
+<select id="selectDebateListCount" parameterType="map" resultType="int">
+    SELECT
+        COUNT(*)
+    FROM Debate d
+    WHERE d.member_id = #{memberId}
+    AND (#{searchTerm} IS NULL OR #{searchTerm} = '' OR d.debate_title LIKE CONCAT('%', #{searchTerm}, '%'))
+</select>
+
+
+    <!-- Select Comment List for a User -->
+<select id="selectCommentList" parameterType="map" resultType="JeffCommentVo">
+    SELECT 
+        dc.debate_comment_id,
+        dc.debate_id,
+        dc.member_id,
+        u.user_nickname,
+        u.user_profile_image_url,
+        dc.debate_comment_content,
+        dc.debate_comment_created_at
+    FROM DebateComment dc
+    LEFT JOIN Member m ON dc.member_id = m.member_id
+    LEFT JOIN User u ON m.member_id = u.member_id
+    WHERE dc.member_id = #{memberId}
+    AND (#{searchTerm} IS NULL OR #{searchTerm} = '' OR dc.debate_comment_content LIKE CONCAT('%', #{searchTerm}, '%'))
+    ORDER BY dc.debate_comment_created_at DESC
+    LIMIT #{offset}, #{size}
+</select>
+
+
+    <!-- Count Comment List for a User -->
+<select id="selectCommentListCount" parameterType="map" resultType="int">
+    SELECT
+        COUNT(*)
+    FROM DebateComment dc
+    WHERE dc.member_id = #{memberId}
+    AND (#{searchTerm} IS NULL OR #{searchTerm} = '' OR dc.debate_comment_content LIKE CONCAT('%', #{searchTerm}, '%'))
+</select>
+
+    
+<select id="selectReviewList" parameterType="map" resultType="JeffReviewVo">
+    SELECT 
+        r.product_id AS productId,
+        p.product_name AS productName,
+        r.review_id AS reviewId,
+        r.review_user_id AS reviewUserId,
+        r.review_order_id AS reviewOrderId,
+        r.review_created_at AS reviewCreatedAt
+    FROM Review r
+    LEFT JOIN Product p ON r.product_id = p.product_id
+    WHERE r.review_user_id = #{userId}
+    AND (#{searchTerm} IS NULL OR #{searchTerm} = '' OR p.product_name LIKE CONCAT('%', #{searchTerm}, '%'))
+    ORDER BY r.review_created_at DESC
+    LIMIT #{offset}, #{size}
+</select>
+
+<select id="selectReviewListCount" parameterType="map" resultType="int">
+    SELECT
+        COUNT(*)
+    FROM Review r
+    LEFT JOIN Product p ON r.product_id = p.product_id
+    WHERE r.review_user_id = #{userId}
+    AND (#{searchTerm} IS NULL OR #{searchTerm} = '' OR p.product_name LIKE CONCAT('%', #{searchTerm}, '%'))
+</select>
+
+
+
+
+</mapper>

@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="hyunVenderMapper">
+
+	<select id="selectReservations" parameterType="int"
+		resultType="map">
+		SELECT
+		o.order_id,
+		o.delivery_method,
+		CASE
+		WHEN
+		o.delivery_method = 'quick' THEN
+		o.desired_delivery_date
+		WHEN
+		o.delivery_method = 'pickup' THEN o.desired_pickup_datetime
+		ELSE NULL
+		END AS reservation_date,
+		CASE
+		WHEN o.delivery_method = 'quick'
+		THEN
+		o.desired_delivery_time
+		WHEN o.delivery_method = 'pickup' THEN
+		o.desired_pickup_time
+		ELSE NULL
+		END AS reservation_time,
+		o.order_status,
+		o.product_id,
+		p.product_name
+		FROM `Order` o
+		LEFT JOIN Product p ON
+		o.product_id = p.product_id
+		WHERE p.vender_id = #{venderId}
+		ORDER BY
+		reservation_date ASC, reservation_time ASC
+	</select>
+
+	<select id="getMonthlyOrderCount" resultType="int">
+		SELECT
+		COUNT(*) AS
+		order_count
+		FROM `Order` o
+		LEFT JOIN Product p ON o.product_id =
+		p.product_id
+		WHERE
+		p.vender_id = #{venderId}
+		AND
+		DATE_FORMAT(o.order_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
+	</select>
+
+	<select id="getMemberPoints"
+		resultType="HyunVenderVo">
+		SELECT
+		m.member_points as memberPoints
+		FROM Member m
+		LEFT JOIN
+		Vender v ON m.member_id = v.member_id
+		WHERE
+		v.member_id = #{memberId}
+	</select>
+
+
+	<select id="getVenderRevenue"
+		resultType="HyunVenderVo">
+		SELECT SUM(total_price) AS totalRevenue
+		FROM `Order` o
+		LEFT
+		JOIN Product p ON o.product_id = p.product_id
+		LEFT
+		JOIN
+		Vender v ON
+		p.vender_id = v.vender_id
+		WHERE v.vender_id = #{venderId}
+		AND
+		DATE_FORMAT(order_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
+	</select>
+
+	<select id="getVenderReview"
+		resultType="HyunReviewVo">
+		SELECT
+		r.review_id,
+		r.product_id,
+		r.review_content,
+		r.review_rating,
+		rp.reply_id
+		FROM
+		Review r
+		LEFT JOIN
+		ReviewReply rp
+		ON
+		r.review_id = rp.review_id
+		WHERE
+		rp.reply_id IS NULL
+		AND r.product_id IN
+		(SELECT product_id FROM Product WHERE vender_id = #{venderId})
+	</select>
+	<!-- 긍정/부정 리뷰 비율 -->
+	<select id="getReviewSentimentStats" parameterType="int"
+		resultType="map">
+		   <![CDATA[
+		SELECT
+		SUM(CASE WHEN review_rating >= 4 THEN 1 ELSE 0 END) AS positive_reviews,
+		SUM(CASE WHEN review_rating < 4 THEN 1 ELSE 0 END) AS negative_reviews
+		FROM
+		Review
+		WHERE
+		product_id IN (SELECT product_id FROM Product WHERE vender_id =
+		#{venderId});
+		]]>
+	</select>
+
+	<!-- 별점 분포 -->
+	<select id="getRatingDistribution" parameterType="int"
+		resultType="map">
+		SELECT
+		review_rating AS rating,
+		COUNT(*) AS count
+		FROM
+		Review
+		WHERE
+		product_id IN (SELECT
+		product_id FROM Product WHERE vender_id =
+		#{venderId})
+		GROUP BY
+		review_rating;
+	</select>
+
+	<!-- 워드 클라우드 데이터 -->
+	<select id="getWordCloudData" parameterType="int"
+		resultType="string">
+		SELECT
+		GROUP_CONCAT(review_content SEPARATOR ' ') AS
+		all_reviews
+		FROM
+		Review
+		WHERE
+		product_id IN
+		(SELECT product_id FROM Product
+		WHERE vender_id = #{venderId});
+	</select>
+
+
+	<select id="getSalesDataByPeriod" parameterType="map"
+		resultType="map">
+		SELECT
+		CASE
+		WHEN #{filterType} = 'daily' THEN
+		DATE(order_date)
+		WHEN #{filterType} =
+		'weekly' THEN YEARWEEK(order_date,
+		1)
+		WHEN #{filterType} = 'monthly' THEN DATE_FORMAT(order_date, '%Y-%m')
+		WHEN #{filterType} = 'yearly' THEN YEAR(order_date)
+		END AS period,
+		SUM(total_price) AS revenue,
+		COUNT(order_id) AS order_count
+		FROM `Order`
+		o
+		JOIN Product p ON o.product_id = p.product_id
+		WHERE p.vender_id =
+		#{venderId}
+		AND order_date BETWEEN #{startDate} AND #{endDate}
+		GROUP BY
+		period
+		ORDER BY period
+	</select>
+
+	<select id="getReviewList" parameterType="map" resultType="map">
+		SELECT
+		r.review_id,
+		r.product_id,
+		p.product_name,
+		r.review_content,
+		r.review_rating,
+		CASE
+		WHEN rp.reply_id IS NOT NULL THEN 'replied'
+		ELSE
+		'notReplied'
+		END AS reply_status,
+		p.vender_id
+		FROM Review r
+		LEFT JOIN
+		ReviewReply rp ON r.review_id = rp.review_id
+		LEFT JOIN Product p ON
+		r.product_id = p.product_id
+		WHERE p.vender_id = #{venderId}
+		ORDER BY
+		r.review_id DESC
+	</select>
+
+	<!-- alias로 venderId 조회 -->
+	<select id="getVenderIdByAlias" parameterType="String"
+		resultType="Long">
+		SELECT vender_id
+		FROM Vender
+		WHERE alias = #{alias}
+	</select>
+	
+	   <!-- venderId로 alias를 찾는 SQL 쿼리 -->
+   <select id="getAliasById" resultType="java.lang.String">
+        SELECT alias
+        FROM Vender
+        WHERE vender_id = #{venderId}
+    </select>
+
+	<select id="getAllVenders" resultType="com.javaex.vendor.model.HyunVenderVo">
+		SELECT
+			vender_id AS venderId,
+			vender_name AS venderName,
+			vender_number AS venderNumber,
+			representative_name AS representativeName,
+			vender_address AS venderAddress,
+			district,
+			vender_description AS venderDescription,
+			kakao_url AS kakaoUrl,
+			alias
+		FROM Vender
+	</select>
+
+</mapper>

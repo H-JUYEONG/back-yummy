@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="DdrWishlist">
+	<!-- 찜 개수 조회 -->
+	<select id="getWishlistCount" parameterType="int" resultType="int">
+		SELECT COALESCE(COUNT(*), 0)
+		FROM ProductWishlist
+		WHERE product_id = #{productId}
+	</select>
+
+	<!-- 찜 상태 확인 -->
+	<select id="checkWishlist" parameterType="map" resultType="int">
+		SELECT COUNT(*)
+		FROM ProductWishlist
+		WHERE product_id = #{productId}
+		AND member_id = #{memberId}
+	</select>
+
+	<!-- 찜 추가 -->
+	<insert id="addWishlist" parameterType="DdrWishlistVo">
+		INSERT INTO ProductWishlist (
+		product_id,
+		member_id
+		) VALUES (
+		#{productId},
+		#{memberId}
+		)
+	</insert>
+
+	<!-- 찜 취소 -->
+	<delete id="removeWishlist" parameterType="DdrWishlistVo">
+		DELETE FROM ProductWishlist
+		WHERE product_id = #{productId}
+		AND member_id = #{memberId}
+	</delete>
+
+</mapper>

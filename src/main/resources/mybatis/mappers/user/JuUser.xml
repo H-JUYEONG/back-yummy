@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="user">
+
+	<!-- 이메일 중복체크 -->
+	<select id="selectByEmail" parameterType="String" resultType="int">
+      <![CDATA[ 
+         select count(*) 
+         from Member 
+         where email = #{email} 
+      ]]>
+	</select>
+
+	<!-- 닉네임 중복체크 -->
+	<select id="selectByNickname" parameterType="String" resultType="int">
+      <![CDATA[ 
+         select count(*) 
+         from User 
+         where user_nickname = #{user_nickname}
+      ]]>
+	</select>
+
+	<!-- 유저 회원가입 -->
+	<!-- Member 테이블에 데이터 삽입 -->
+	<insert id="insertMember" parameterType="JuUserVo" useGeneratedKeys="true" keyProperty="member_id">
+		INSERT INTO Member (type, email, password_hash,
+		phone_number, name,
+		created_at, is_active)
+		VALUES ('유저', #{email}, #{password_hash}, #{phone_number}, #{name}, NOW(),
+		1)
+	</insert>
+
+	<!-- User 테이블에 데이터 삽입 -->
+	<insert id="insertUser" parameterType="JuUserVo">
+		INSERT INTO User (user_nickname, user_provider, member_id)
+		VALUES (#{user_nickname}, #{user_provider},
+		#{member_id})
+	</insert>
+
+	<!-- 업체 회원가입 -->
+	<!-- Member 테이블에 데이터 삽입 -->
+	<insert id="insertMemberVender" parameterType="JuUserVo" useGeneratedKeys="true" keyProperty="member_id">
+		INSERT INTO Member (type, email,
+		password_hash, created_at, is_active)
+		VALUES ('업체', #{email}, #{password_hash}, NOW(), 0)
+	</insert>
+
+	<!-- Vender 테이블에 데이터 삽입 -->
+	<insert id="insertVender" parameterType="JuUserVo">
+		INSERT INTO Vender (vender_name, vender_number, representative_name,
+		member_id, business_license_url)
+		VALUES
+		(#{vender_name}, #{vender_number}, #{representative_name},
+		#{member_id}, #{business_license_url})
+	</insert>
+
+	<!-- 로그인 -->
+	<select id="selectByIdPw" parameterType="JuLoginVo" resultType="JuLoginVo">
+      <![CDATA[ 
+      	SELECT m.member_id,
+		       m.type,
+		       m.email,
+			   m.password_hash,
+		       m.name,
+		       m.is_active,
+		       u.user_id,
+		       v.vender_id
+		FROM Member m
+		LEFT JOIN User u ON m.member_id = u.member_id
+		LEFT JOIN Vender v ON m.member_id = v.member_id
+		WHERE m.email = #{email}
+      ]]>
+	</select>
+
+	<!-- 소셜 회원가입 -->
+	<!-- Member 테이블에 데이터 삽입2 -->
+	<insert id="insertMember2" parameterType="JuUserVo" useGeneratedKeys="true" keyProperty="member_id">
+		INSERT INTO Member (type, email, phone_number, name, created_at, is_active)
+		VALUES ('유저', #{email}, #{phone_number}, #{name}, NOW(), 1)
+	</insert>
+
+	<!-- User 테이블에 데이터 삽입2 -->
+	<insert id="insertUser2" parameterType="JuUserVo">
+		INSERT INTO User (user_nickname, user_profile_image_url, user_provider, member_id)
+		VALUES (#{user_nickname}, #{user_profile_image_url}, #{user_provider}, #{member_id})
+	</insert>
+
+	<!-- 소셜 로그인 -->
+	<select id="selectByIdPw2" parameterType="String" resultType="JuLoginVo">
+      <![CDATA[ 
+      	SELECT m.member_id,
+		       m.type,
+		       m.email,
+		       m.name,
+		       u.user_id,
+		       v.vender_id,
+		       u.user_provider
+		FROM Member m
+		LEFT JOIN User u ON m.member_id = u.member_id
+		LEFT JOIN Vender v ON m.member_id = v.member_id
+		WHERE m.email = #{email}
+      ]]>
+	</select>
+
+	<!-- 휴대폰번호 중복체크 -->
+	<select id="selectByPhoneNumber" parameterType="String" resultType="int">
+      <![CDATA[ 
+         select count(*) 
+         from Member 
+         where phone_number = #{phone_number} 
+      ]]>
+	</select>
+
+	<!-- 오늘 알림이 설정된 기념일 조회 -->
+	<select id="notificationsForToday" resultType="JuAnniversaryVo">
+		SELECT
+			a.anniversary_id AS anniversaryId,
+			a.user_id AS userId,
+			a.anniversary_name AS anniversaryName,
+			a.anniversary_date AS anniversaryDate,
+			a.notification_date AS notificationDate,
+			m.phone_number AS phone,
+			m.name AS name
+			FROM
+			Anniversary a
+			JOIN
+			User u ON a.user_id = u.user_id
+			JOIN
+			Member m ON u.member_id = m.member_id
+			WHERE
+			a.notification_date = CURDATE()
+			AND a.is_notification_enabled = TRUE
+	</select>
+
+	<!-- SMS 이력 저장 -->
+	<insert id="insertSmsHistory" parameterType="JuAnniversaryVo">
+		INSERT INTO SMSHistory (user_id, anniversary_id, phone, message, status, sent_at) 
+		VALUES (#{userId}, #{anniversaryId}, #{phone}, #{message}, #{status}, NOW());
+	</insert>
+
+</mapper>

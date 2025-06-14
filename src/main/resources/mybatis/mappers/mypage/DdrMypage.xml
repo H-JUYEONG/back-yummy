@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="DdrMypage">
+
+	<select id="getOrderList" parameterType="int"
+		resultType="DdrMypageOrderVo">
+		SELECT
+		o.order_id AS id,
+		o.product_id AS productId,
+		DATE_FORMAT(o.order_date, '%Y-%m-%d') AS date,
+		p.product_name AS
+		productName,
+		o.order_status AS orderStatus,
+		p.vender_id as venderId,
+		CASE
+		WHEN o.order_status IN ('결제 완료', '제작 중') THEN '업로드 미완료'
+		WHEN
+		(o.order_video_url IS NOT NULL OR
+		o.order_photo_url IS NOT NULL) THEN
+		'업로드 완료'
+		ELSE
+		'업로드 미완료'
+		END AS statusMessage,
+		CASE
+		WHEN o.order_status IN
+		('수령 완료') THEN '주문상세보기,리뷰쓰기'
+		ELSE '주문상세보기'
+		END AS
+		actions
+		FROM
+		`Order` o
+		JOIN
+		`Product` p ON o.product_id =
+		p.product_id
+		WHERE
+		o.user_id =
+		#{userId}
+		ORDER BY
+		o.order_date DESC
+	</select>
+	<select id="getOrderDetail" parameterType="int"
+		resultType="DdrMypageOrderDetailVo">
+		SELECT
+		o.order_id AS id,
+		o.DATE_FORMAT(order_date,
+		'%Y-%m-%d') AS
+		date,
+		p.product_name AS
+		productName,
+		p.product_image1_url
+		AS image1,
+		p.product_image2_url AS image2,
+		p.product_image3_url AS
+		image3,
+		p.product_image4_url AS image4,
+		o.product_id as
+		productId,
+		p.vender_id as venderId
+		from `Order` o
+		left join Product p on
+		o.product_id = p.product_id
+		order_id = #{orderId}
+	</select>
+	<select id="getOrderStatusCount" parameterType="int"
+		resultType="DdrMypageOrderStatusCountVo">
+		SELECT
+		SUM(CASE WHEN order_status = '결제 완료' THEN 1 ELSE 0
+		END) as
+		paymentCompletedCount,
+		SUM(CASE WHEN order_status = '제작 중' THEN
+		1 ELSE 0 END) as inProductionCount,
+		SUM(CASE WHEN order_status = '제작
+		완료' THEN 1 ELSE 0 END) as
+		productionCompletedCount,
+		SUM(CASE WHEN
+		order_status = '픽업 요청' OR order_status = '배송 중' THEN 1 ELSE 0
+		END) as
+		deliveryCount,
+		SUM(CASE WHEN order_status = '수령 완료' THEN 1 ELSE 0 END)
+		as
+		completedCount
+		FROM `Order`
+		WHERE user_id = #{userId}
+	</select>
+	<select id="getOrderMediaDetail" parameterType="int"
+		resultType="DdrMypageOrderVideoVo">
+		SELECT
+		o.order_id AS id,
+		DATE_FORMAT(o.order_date, '%Y-%m-%d') AS date,
+		p.product_name AS productName,
+		o.order_video_url AS orderVideoUrl,     <!-- 별칭 
+			추가 -->
+		o.order_photo_url AS orderPhotoUrl      <!-- 별칭 추가 -->
+		FROM
+		`Order` o
+		LEFT JOIN
+		`Product` p ON o.product_id = p.product_id
+		WHERE
+		o.order_id = #{orderId}
+	</select>
+
+
+</mapper>

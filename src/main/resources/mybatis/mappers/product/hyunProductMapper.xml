@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="hyunProductMapper">
+
+	<select id="getWishlistCakeDesigns" parameterType="int" resultType="HyunProductVo">
+		SELECT
+		cd.cake_design_id AS cakeDesignId,
+		cd.member_id AS
+		memberId,
+		cd.cake_design_title
+		AS cakeDesignTitle,
+		cd.cake_design_description AS cakeDesignDescription,
+		cdi.cake_design_image_url AS cakeDesignImageUrl, -- 단일 이미지 URL
+		true AS
+		isWishlisted
+		FROM
+		CakeDesign cd
+		LEFT JOIN
+		CakeDesignImage cdi ON
+		cd.cake_design_id = cdi.cake_design_id
+		INNER JOIN
+		CakeDesignWishlist w
+		ON cd.cake_design_id = w.cake_design_id AND
+		w.member_id =
+		#{memberId};
+	</select>
+
+	<select id="findMyCakeDesigns" parameterType="int" resultType="HyunProductVo">
+		SELECT
+		cd.cake_design_id AS cakeDesignId,
+		cd.cake_design_title AS cakeDesignTitle,
+		cdi.cake_design_image_url AS
+		cakeDesignImageUrl
+		FROM
+		CakeDesign cd
+		LEFT JOIN
+		CakeDesignImage cdi ON
+		cd.cake_design_id = cdi.cake_design_id
+		WHERE
+		cd.member_id =
+		#{memberId}
+	</select>
+
+	<!-- 상품 등록 -->
+	<insert id="insertProduct" parameterType="HyunProductRegistrationVo">
+		INSERT INTO Product (
+		vender_id,
+		product_name,
+		product_price,
+		description,
+		created_at,
+		is_visible,
+		product_image1_url,
+		product_image2_url,
+		product_image3_url,
+		product_image4_url,
+		cake_design_id
+		)
+		VALUES (
+		#{venderId},
+		#{productName},
+		#{price},
+		#{description},
+		NOW(),
+		#{isVisible},
+		#{productImage1Url},
+		#{productImage2Url},
+		#{productImage3Url},
+		#{productImage4Url},
+		#{cakeDesignId}
+		)
+	</insert>
+
+	<!-- 옵션 매핑 삽입 -->
+	<insert id="insertProductOptionMapping">
+		INSERT INTO ProductOptionTypeMapping (product_id,
+		option_type_id,
+		option_value_id)
+		VALUES (#{productId}, #{optionTypeId},
+		#{optionValueId})
+	</insert>
+
+	<!-- 등록된 상품 ID 조회 -->
+	<select id="selectLastInsertedProductId" resultType="long">
+		SELECT
+		LAST_INSERT_ID()
+	</select>
+
+	<select id="getProductsByVenderId" parameterType="long" resultType="HyunProductVo">
+		SELECT
+		product_id AS productId,
+		product_name AS productName,
+		product_price AS price,
+		is_visible AS isVisible
+		FROM
+		Product
+		WHERE
+		vender_id = #{venderId} AND is_deleted = 0
+		Order by product_id desc
+	</select>
+
+	<!-- 특정 상품 조회 -->
+	<select id="getProductById" parameterType="long" resultType="HyunProductRegistrationVo">
+		SELECT
+		p.product_id AS productId,
+		p.product_name AS
+		productName,
+		p.product_price AS price,
+		p.is_visible AS isVisible,
+		p.description,
+		p.product_image1_url AS productImage1Url,
+		p.product_image2_url AS productImage2Url,
+		p.product_image3_url AS
+		productImage3Url,
+		p.product_image4_url AS productImage4Url,
+		p.cake_design_id AS cakeDesignId,
+		cd.cake_design_title AS
+		cakeDesignTitle,
+		MIN(cdi.cake_design_image_url) AS cakeDesignImageUrl
+		FROM
+		Product p
+		LEFT JOIN
+		CakeDesign cd ON p.cake_design_id =
+		cd.cake_design_id
+		LEFT JOIN
+		CakeDesignImage cdi ON
+		cd.cake_design_id =
+		cdi.cake_design_id
+		WHERE
+		p.product_id =#{productId}
+		GROUP BY
+		p.product_id, p.product_name, p.product_price, p.is_visible,
+		p.description,
+		p.product_image1_url, p.product_image2_url,
+		p.product_image3_url,
+		p.product_image4_url,
+		p.cake_design_id,
+		cd.cake_design_title
+	</select>
+
+	<!-- 노출 상태 업데이트 -->
+	<update id="updateProductVisibility">
+		UPDATE Product
+		SET is_visible = #{isVisible}
+		WHERE
+		product_id = #{productId}
+	</update>
+
+	<!-- 상품 상태 확인 -->
+	<select id="getProductStatus" parameterType="long" resultType="map">
+		SELECT is_visible, is_deleted
+		FROM Product
+		WHERE product_id =
+		#{productId}
+	</select>
+
+	<!-- 상품을 삭제 상태로 업데이트 -->
+	<update id="markProductAsDeleted" parameterType="long">
+		UPDATE Product
+		SET is_deleted = 1
+		WHERE product_id = #{productId} AND is_visible = 0
+	</update>
+
+	<update id="updateProduct" parameterType="HyunProductRegistrationVo">
+		UPDATE Product
+		SET
+		product_name = #{productName},
+		product_price = #{price},
+		description = #{description},
+		product_image1_url = CASE WHEN #{productImage1Url} IS NOT NULL THEN
+		#{productImage1Url}
+		ELSE product_image1_url END,
+		product_image2_url =
+		CASE WHEN
+		#{productImage2Url} IS NOT NULL THEN #{productImage2Url}
+		ELSE product_image2_url END,
+		product_image3_url = CASE WHEN
+		#{productImage3Url} IS NOT NULL THEN
+		#{productImage3Url}
+		ELSE
+		product_image3_url END,
+		product_image4_url = CASE WHEN
+		#{productImage4Url} IS NOT NULL THEN #{productImage4Url}
+		ELSE
+		product_image4_url
+		END,
+		cake_design_id = #{cakeDesignId}
+		WHERE
+		product_id = #{productId};
+	</update>
+
+	<delete id="deleteProductOption" parameterType="map">
+		DELETE FROM
+		ProductOptionTypeMapping
+		WHERE product_id = #{productId}
+		AND
+		option_type_id = #{optionTypeId}
+		AND
+		option_value_id = #{optionValueId}
+	</delete>
+	<update id="updateProductOptionMapping">
+		UPDATE ProductOptionTypeMapping
+		SET
+		option_type_id =
+		#{optionTypeId},
+		option_value_id = #{optionValueId}
+		WHERE
+		product_id =
+		#{productId} AND
+		mapping_id = #{mappingId};
+	</update>
+
+	<select id="getOptionsByProductAndVender" parameterType="map" resultMap="OptionTypeWithValues">
+		SELECT
+		ot.option_type_id AS optionTypeId,
+		ot.option_type_name
+		AS optionTypeName,
+		ov.option_value_id AS optionValueId,
+		ov.option_value_name AS optionValueName,
+		ov.option_value_image_url AS
+		optionValueImageUrl,
+		IF(pom.product_id IS NOT NULL, 1,
+		0) AS isSelected
+		FROM
+		OptionType ot
+		LEFT JOIN OptionValue ov ON ot.option_type_id =
+		ov.option_type_id
+		LEFT JOIN ProductOptionTypeMapping pom ON
+		pom.option_value_id
+		=
+		ov.option_value_id AND pom.product_id =
+		#{productId}
+		WHERE
+		ov.vender_id = #{venderId}
+		ORDER BY
+		ot.option_type_id,
+		ov.option_value_id;
+	</select>
+
+	<select id="getProductList" resultType="HyunProductVo">
+		SELECT
+		p.product_id AS productId,
+		p.product_name AS productName,
+		p.product_price AS price,
+		p.is_visible AS isVisible,
+		p.product_image1_url AS productImage1Url,
+		p.vender_id AS venderId,
+		AVG(r.review_rating) AS reviewRating, -- 리뷰 평균
+		v.vender_profile_image_url AS venderProfileImageUrl,
+		v.vender_name AS venderName,
+		v.district,
+		ov.option_value_name AS optionValueName
+		FROM
+		Product p
+		LEFT JOIN
+		Review r ON p.product_id = r.product_id
+		LEFT JOIN
+		Vender v ON p.vender_id = v.vender_id
+		LEFT JOIN
+		ProductOptionTypeMapping pot on p.product_id = pot.product_id
+		LEFT JOIN
+		OptionValue ov ON pot.option_value_id= ov.option_value_id -- product_id 기준으로 조인
+		where p.is_visible = 1
+		AND ov.option_type_id = 1 -- option_type_id = 1만 선택
+		GROUP BY
+		p.product_id,
+		p.product_name,
+		p.product_price,
+		p.is_visible,
+		p.product_image1_url,
+		p.vender_id,
+		v.vender_profile_image_url,
+		v.vender_name,
+		v.district,
+		ov.option_value_name
+		LIMIT 0, 1000;
+	</select>
+
+	<resultMap id="OptionTypeWithValues" type="HyunOptionTypeVO">
+		<id property="optionTypeId" column="optionTypeId" />
+		<result property="optionTypeName" column="optionTypeName" />
+		<collection property="optionValues" ofType="HyunOptionValueVO">
+			<id property="optionValueId" column="optionValueId" />
+			<result property="optionValueName" column="optionValueName" />
+			<result property="optionValueImageUrl" column="optionValueImageUrl" />
+			<result property="optionValueCreatedAt" column="optionValueCreatedAt" />
+			<result property="isSelected" column="isSelected" />
+		</collection>
+	</resultMap>
+
+	<select id="getProductOptionsByProductIdAndVenderId" parameterType="map" resultType="map">
+		SELECT
+		pom.option_type_id AS optionTypeId,
+		pom.option_value_id AS optionValueId
+		FROM
+		ProductOptionTypeMapping pom
+		WHERE
+		pom.product_id = #{productId}
+		<if test="venderId != null">
+			AND EXISTS (
+			SELECT 1
+			FROM OptionType ot
+			WHERE ot.option_type_id = pom.option_type_id
+			AND ot.vender_id = #{venderId}
+			)
+		</if>
+	</select>
+
+
+</mapper>

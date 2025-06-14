@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="DdrMypageWishlist">
+	<!-- 찜한 상품 목록 조회 -->
+	<select id="selectWishlistProducts" parameterType="DdrMypageWishlistVo" resultType="DdrMypageWishlistVo">
+    SELECT
+        pw.product_wishlist_id AS productWishlistId,
+        p.product_id AS productId,
+        p.product_name AS productName,
+        p.product_price AS productPrice,
+        p.product_image1_url AS productImage1Url
+    FROM
+        ProductWishlist pw
+        JOIN Product p ON pw.product_id = p.product_id
+        LEFT JOIN ProductOptionTypeMapping potm ON p.product_id = potm.product_id
+        LEFT JOIN OptionType ot ON potm.option_type_id = ot.option_type_id
+        LEFT JOIN OptionValue ov ON potm.option_value_id = ov.option_value_id
+    WHERE
+        pw.member_id = #{memberId}
+        <if test="style != null and style != ''">
+            AND ot.option_type_name = 'Category'
+            AND ov.option_value_name = #{style}
+        </if>
+        <if test="target != null and target != ''">
+            AND ot.option_type_name = 'Product Type'
+            AND ov.option_value_name = #{target}
+        </if>
+        <if test="searchKeyword != null and searchKeyword != ''">
+            AND p.product_name LIKE CONCAT('%', #{searchKeyword}, '%')
+        </if>
+    GROUP BY
+        pw.product_wishlist_id,
+        p.product_id,
+        p.product_name,
+        p.product_price,
+        p.product_image1_url
+    ORDER BY
+        pw.product_wishlist_id DESC
+    LIMIT #{size} OFFSET #{offset}
+</select>
+	<!-- 전체 개수 조회 -->
+	<select id="selectWishlistProductsCount"
+		parameterType="DdrMypageWishlistVo" resultType="int">
+		SELECT
+		COUNT(DISTINCT pw.product_wishlist_id)
+		FROM
+		ProductWishlist pw
+		JOIN Product p ON pw.product_id = p.product_id
+		LEFT JOIN ProductOptionTypeMapping potm ON p.product_id = potm.product_id
+		LEFT JOIN OptionType ot ON potm.option_type_id = ot.option_type_id
+		LEFT JOIN OptionValue ov ON potm.option_value_id = ov.option_value_id
+		WHERE
+		pw.member_id = #{memberId}
+		<if test="style != null and style != ''">
+			AND ot.option_type_name = 'Category'
+			AND ov.option_value_name = #{style}
+		</if>
+		<if test="target != null and target != ''">
+			AND ot.option_type_name = 'Product Type'
+			AND ov.option_value_name = #{target}
+		</if>
+		<if test="searchKeyword != null and searchKeyword != ''">
+			AND p.product_name LIKE CONCAT('%', #{searchKeyword}, '%')
+		</if>
+	</select>
+</mapper>

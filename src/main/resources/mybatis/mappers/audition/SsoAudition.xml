@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="SsoAudition">
+	
+	<!-- 오디션 정보가져오기 -->
+	<select id="auditionAllList" resultType="SsoAuditionVo">
+		<![CDATA[
+			select 	 audition_application_id as auditionId
+					,recipient_name as userName
+			        ,delivery_method as deliveryMethod
+			        ,DATE(desired_delivery_date) as deliveryDate
+			        ,DATE(desired_pickup_date) as pickupDate
+			        ,region
+			        ,design_id as designId
+			        ,status
+			from AuditionApplication
+			where status = '진행중'
+			
+		]]>
+	
+	</select>
+	
+	<!-- 업체 상품, 지역정보 가져오기 -->
+	<select id="getVender" parameterType="int" resultType="SsoAuditionVo">
+		<![CDATA[
+			select 	 v.vender_id as venderId
+					,v.district
+			        ,p.cake_design_id as cakeDesignId
+			from Vender v
+			JOIN Product p
+			ON v.vender_id = p.vender_id
+			where p.is_visible = 1
+			and v.vender_id = #{venderId}
+		]]>
+	
+	</select>
+	
+	<!-- 업체 구 가져오기 -->
+	<select id="getDistrict" parameterType="int" resultType="String">
+		select district
+		from Vender
+		where vender_id = #{venderId}
+	
+	</select>
+	
+	
+	<!-- 실시간 오디션 리스트 가져오기 x -->
+	<select id="auditionAllListx" parameterType="int" resultType="SsoAuditionVo">
+		<![CDATA[
+			select	 a.audition_application_id as auditionId
+					,a.recipient_name as userName
+			        ,a.delivery_method as deliveryMethod
+			        ,DATE(a.desired_delivery_date) as deliveryDate
+			        ,DATE(a.desired_pickup_date) as pickupDate
+			        ,a.region
+			        ,v.district 
+			        ,v.vender_id as venderId
+			        ,a.design_id as designId
+			        ,p.product_name
+			        ,p.product_id 
+			        ,p.cake_design_id as cakeDesignId
+			        ,status
+			from AuditionApplication a
+			CROSS JOIN
+			Vender v
+			JOIN Product p
+			ON v.vender_id = p.vender_id
+			where v.vender_id = #{venderId}
+			and a.region = v.district
+			and a.status = '진행중'
+		]]>
+	</select>
+	
+	<!-- 업체 오디션 신청폼 유저 주문내역 가져오기 -->
+	<select id="getOrder" parameterType="int" resultType="SsoAuditionVo">
+		<![CDATA[
+			select	 a.audition_application_id as auditionId
+					,a.audition_application_title as auditionTitle
+			        ,a.audition_application_size as auditionApplicationSize
+			        ,a.expected_price as expectedPrice
+			        ,a.delivery_method as deliveryMethod
+			        ,a.recipient_name as userName
+			        ,Date(desired_delivery_date) as deliveryDate
+			        ,Date(a.desired_pickup_date) as pickupDate
+			        ,a.additional_requests as additionalRequests
+			        ,a.cake_lettering as lettering
+                    ,a.plate_lettering as plateLettering
+			        ,a.design_id as designId
+			        ,a.image_url as userimgURL
+			from AuditionApplication a
+			where audition_application_id = #{auditionId}
+		]]>
+	
+	</select>
+	
+	<!-- 오디션 신청 상품리스트 -->
+	
+	<select id="getProduct" parameterType="int" resultType="SsoAuditionVo">
+		<![CDATA[
+			select	 product_id as productId
+					,vender_id as venderId
+			        ,cake_design_id as cakeDesignId
+			        ,product_name as productName
+			        ,product_image1_url as productURL
+			from Product
+			where is_visible = 1
+			and vender_id = #{venderId}
+		]]>
+	
+	</select>
+	
+	<!-- 케이크 가져오기 -->
+	<select id="cake" parameterType="SsoAuditionOptionVo" resultType="SsoAuditionOptionVo">
+		<![CDATA[
+			select	 product_name as cakeName
+					,product_image1_url as cakeURL
+			from Product
+			WHERE product_id = #{productId}
+			AND  vender_id = #{venderId}
+			AND is_visible = 1
+		]]>
+	</select>
+	
+	<!-- 케이크 타입가져오기 -->
+	<select id="cakeType" parameterType="SsoAuditionOptionVo" resultType="SsoAuditionOptionVo">
+		<![CDATA[
+			select	 p.product_name as cakeName
+					,ov.option_value_image_url as optionURL
+					,ov.option_value_name as productType
+                    ,p.product_id as productId
+			from OptionValue ov
+			left join Product p 
+			on ov.vender_id = p.vender_id
+			WHERE p.product_id = #{productId}
+			AND  p.vender_id = #{venderId}
+			AND p.is_visible = 1
+			AND ov.option_type_id = 1
+		]]>
+	
+	</select>
+	
+	<!-- 카테고리 -->
+	<select id="cakeCar" parameterType="SsoAuditionOptionVo" resultType="SsoAuditionOptionVo">
+		<![CDATA[
+			select	 p.product_name as cakeName
+					,ov.option_value_image_url as optionURL
+					,ov.option_value_name as category
+                    ,p.product_id as productId
+			from OptionValue ov
+			left join Product p 
+			on ov.vender_id = p.vender_id
+			WHERE p.product_id = #{productId}
+			AND  p.vender_id = #{venderId}
+			AND p.is_visible = 1
+			AND ov.option_type_id = 10
+		]]>
+	
+	</select>
+	
+	<!-- 배경색상 -->
+	<select id="backgroundColor" parameterType="SsoAuditionOptionVo" resultType="SsoAuditionOptionVo">
+		<![CDATA[
+			select	 p.product_name as cakeName
+					,ov.option_value_image_url as optionURL
+					,ov.option_value_name as cakeColor
+                    ,p.product_id as productId
+			from OptionValue ov
+			left join Product p 
+			on ov.vender_id = p.vender_id
+			WHERE p.product_id = #{productId}
+			AND  p.vender_id = #{venderId}
+			AND p.is_visible = 1
+			AND ov.option_type_id = 5
+		]]>
+	</select>
+	
+	<!-- 크림색상 -->
+	<select id="creams" parameterType="SsoAuditionOptionVo" resultType="SsoAuditionOptionVo">
+		<![CDATA[
+			select	 p.product_name as cakeName
+					,ov.option_value_image_url as optionURL
+					,ov.option_value_name as CreamColor
+			from OptionValue ov
+			left join Product p 
+			on ov.vender_id = p.vender_id
+			WHERE p.product_id = #{productId}
+			AND  p.vender_id = #{venderId}
+			AND p.is_visible = 1
+			AND ov.option_type_id = 7
+		]]>
+	</select>
+	
+	<!-- 크림위치 -->
+	<select id="creamPosition" parameterType="SsoAuditionOptionVo" resultType="SsoAuditionOptionVo">
+		<![CDATA[
+			select	 p.product_name as cakeName
+					,ov.option_value_image_url as optionURL
+					,ov.option_value_name as creamPosition
+                    ,p.product_id as productId
+			from OptionValue ov
+			left join Product p 
+			on ov.vender_id = p.vender_id
+			WHERE p.product_id = #{productId}
+			AND  p.vender_id = #{venderId}
+			AND p.is_visible = 1
+			AND ov.option_type_id = 6
+		]]>
+	</select>
+	<!-- 크림맛 -->
+	<select id="creamTaste"  parameterType="SsoAuditionOptionVo" resultType="SsoAuditionOptionVo">
+		<![CDATA[
+			select	 p.product_name as cakeName
+					,ov.option_value_image_url as optionURL
+					,ov.option_value_name as flavorCream
+                    ,p.product_id as productId
+			from OptionValue ov
+			left join Product p 
+			on ov.vender_id = p.vender_id
+			WHERE p.product_id = #{productId}
+			AND  p.vender_id = #{venderId}
+			AND p.is_visible = 1
+			AND ov.option_type_id = 4
+		]]>
+	</select>
+	
+	<!-- 데코타입 -->
+	<select id="decorationType" parameterType="SsoAuditionOptionVo" resultType="SsoAuditionOptionVo">
+		<![CDATA[
+			select	 p.product_name as cakeName
+					,ov.option_value_image_url as optionURL
+					,ov.option_value_name as decorationType
+                    ,p.product_id as productId
+			from OptionValue ov
+			left join Product p 
+			on ov.vender_id = p.vender_id
+			WHERE p.product_id = #{productId}
+			AND  p.vender_id = #{venderId}
+			AND p.is_visible = 1
+			AND ov.option_type_id = 8
+		]]>
+	</select>
+	
+	<!-- 데코색상 -->
+	<select id="decorationColor" parameterType="SsoAuditionOptionVo" resultType="SsoAuditionOptionVo">
+		<![CDATA[
+			select	 p.product_name as cakeName
+					,ov.option_value_image_url as optionURL
+					,ov.option_value_name as decorationColor
+                    ,p.product_id as productId
+			from OptionValue ov
+			left join Product p 
+			on ov.vender_id = p.vender_id
+			WHERE p.product_id = #{productId}
+			AND  p.vender_id = #{venderId}
+			AND p.is_visible = 1
+			AND ov.option_type_id = 9
+		]]>
+	</select>
+	
+	
+	<!-- 사이즈 -->
+	<select id="size" parameterType="SsoAuditionOptionVo" resultType="SsoAuditionOptionVo">
+		<![CDATA[
+			select	 p.product_name as cakeName
+					,ov.option_value_image_url as optionURL
+			        ,ov.option_value_name as size
+			from OptionValue ov
+			left join Product p 
+			on ov.vender_id = p.vender_id
+			WHERE p.product_id = #{productId}
+			AND  p.vender_id = #{venderId}
+			AND p.is_visible = 1
+			AND ov.option_type_id = 2
+		]]>
+	</select>
+	
+	<!-- 맛 -->
+	<select id="taste" parameterType="SsoAuditionOptionVo" resultType="SsoAuditionOptionVo">
+		<![CDATA[
+			select	 p.product_name as cakeName
+					,ov.option_value_image_url as optionURL
+			        ,ov.option_value_name as taste
+			from OptionValue ov
+			left join Product p 
+			on ov.vender_id = p.vender_id
+			WHERE p.product_id = #{productId}
+			AND  p.vender_id = #{venderId}
+			AND p.is_visible = 1
+			AND ov.option_type_id = 3
+		]]>
+	
+	</select>
+	
+	<!-- 오디션 신청하기 -->
+	<insert id="insertAudition" parameterType="SauditionInsertVo">
+		<![CDATA[
+			insert into AuditionVendorCart
+			VALUES(null, #{auditionId}, #{venderId}, #{productId},
+			#{deliveryMethod},
+			#{productType}, #{cakeSize}, #{cakeTaste},
+			#{creamTaste}, #{backgroundColor}, #{creamPosition}, #{creamColor},
+			#{decorationType}, #{decorationColor}, #{category}, #{orderAmount}, #{cakeLettering}, #{plateLettering},
+			#{totalPrice}, #{applicationRequests}, #{deliveryDate}, false, now(), #{shopRequests} 
+			)
+		]]>
+	
+	</insert>
+	
+	<!-- 참여중인 오디션 리스트 가져오기 -->
+	<select id="getIngAuditionList" parameterType="int" resultType="SauditionStatusVo">
+		<![CDATA[
+			select	 aa.audition_application_id as auditionId
+					,ac.audition_cart_id as auditionCartId
+					,ac.vendor_id as venderId
+			        ,aa.recipient_name as orderName
+			        ,FLOOR(ac.proposed_amount) as price
+			        ,ac.delivery_method as deliveryMethod
+			        ,DATE(ac.delivery_date) as deliveryDate
+			        ,aa.status as auditionStatus
+					,ac.is_selected as isSelected
+			from AuditionVendorCart ac
+			LEFT Join AuditionApplication aa
+			On ac.audition_application_id = aa.audition_application_id
+			where vendor_id = #{venderId}
+			and aa.status = '진행중'
+		]]>
+	
+	</select>
+	
+	<!-- 참여중인 오디션 삭제 -->
+	<delete id="deleteAudition" parameterType="int">
+		<![CDATA[
+			delete from AuditionVendorCart
+			where audition_cart_id = #{auditionCartId}
+		]]>
+	
+	</delete>
+	
+</mapper>
